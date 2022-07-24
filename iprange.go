@@ -88,8 +88,7 @@ func Parse(s string) (r IPRange, err error) {
 			return r, errors.New("ip address MUST NOT have a zone")
 		}
 
-		if first.Is4() && !last.Is4() || first.Is6() && !last.Is6() ||
-			first.Is4In6() && !last.Is4In6() || last.Is4In6() && !first.Is4In6() {
+		if first.Is4() && !last.Is4() || first.Is6() && !last.Is6() {
 			return r, errors.New("first and last address have different IP versions")
 		}
 		if last.Less(first) {
@@ -102,6 +101,9 @@ func Parse(s string) (r IPRange, err error) {
 	addr, err := netip.ParseAddr(s)
 	if err != nil {
 		return r, err
+	}
+	if addr.Zone() != "" {
+		return r, errors.New("ip address MUST NOT have a zone")
 	}
 	return IPRange{addr, addr}, nil
 }

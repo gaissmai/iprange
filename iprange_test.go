@@ -33,6 +33,11 @@ func TestParseRangeInvalid(t *testing.T) {
 		"-fe80::1",
 		"fe80::/130",
 		"127.0.0.0/35",
+		"fe80::1%eth0-fe80::2",
+		"fe80::1-fe80::2%eth2",
+		"fe80::2-fe80::1",
+		"fe80::2%eth2",
+		"1.2.3.4.5",
 	}
 
 	for _, s := range tests {
@@ -546,6 +551,14 @@ func TestPrefixes(t *testing.T) {
 			t.Fatalf("iprange.Prefixes(), for '%s', want %v, got %v", tt.in, tt.want, got)
 		}
 	}
+
+	for _, tt := range tests {
+		got := []netip.Prefix{}
+		got = tt.in.PrefixesAppend(got)
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Fatalf("iprange.Prefixes(), for '%s', want %v, got %v", tt.in, tt.want, got)
+		}
+	}
 }
 
 func TestMarshalUnmarshalBinary(t *testing.T) {
@@ -653,6 +666,85 @@ func TestMarshalUnmarshalText(t *testing.T) {
 		}
 		if r != r2 {
 			t.Fatalf("got %v; want %v", r2, r)
+		}
+	}
+
+	// ###
+	// only unmarshal into zero Range
+	r := mustParseIPRange("10.0.0.0/24")
+	if err := r.UnmarshalText([]byte{1, 2, 3, 0, 1, 2, 3, 255}); err == nil {
+		t.Fatalf("%q decoded from byte slize into non zero range; want err, got %v", r, err)
+	}
+}
+
+func TestCompareLower(t *testing.T) {
+	tests := []struct {
+		r1   iprange.IPRange
+		r2   iprange.IPRange
+		want int
+	}{
+		{
+			r1:   mustParseIPRange("1.2.3.4-1.2.3.5"),
+			r2:   mustParseIPRange("1.2.3.4-1.2.3.5"),
+			want: 0,
+		},
+		{
+			r1:   mustParseIPRange("1.2.3.3-1.2.3.7"),
+			r2:   mustParseIPRange("1.2.3.4-1.2.3.8"),
+			want: -1,
+		},
+		{
+			r1:   mustParseIPRange("2001:db8::1"),
+			r2:   mustParseIPRange("fe80::/10"),
+			want: -1,
+		},
+	}
+
+	for _, tt := range tests {
+		got := tt.r1.CompareLower(tt.r2)
+		if got != tt.want {
+			t.Fatalf("(%s).CompareLower(%s), want: %v, got: %v\n", tt.r1, tt.r2, tt.want, got)
+		}
+
+		got = tt.r2.CompareLower(tt.r1)
+		if -1*got != tt.want {
+			t.Fatalf("(%s).CompareLower(%s), want: %v, got: %v\n", tt.r2, tt.r1, tt.want, -1*got)
+		}
+	}
+}
+
+func TestCompareUpper(t *testing.T) {
+	tests := []struct {
+		r1   iprange.IPRange
+		r2   iprange.IPRange
+		want int
+	}{
+		{
+			r1:   mustParseIPRange("1.2.3.4-1.2.3.5"),
+			r2:   mustParseIPRange("1.2.3.4-1.2.3.5"),
+			want: 0,
+		},
+		{
+			r1:   mustParseIPRange("1.2.3.3-1.2.3.7"),
+			r2:   mustParseIPRange("1.2.3.4-1.2.3.8"),
+			want: -1,
+		},
+		{
+			r1:   mustParseIPRange("2001:db8::1"),
+			r2:   mustParseIPRange("fe80::/10"),
+			want: -1,
+		},
+	}
+
+	for _, tt := range tests {
+		got := tt.r1.CompareUpper(tt.r2)
+		if got != tt.want {
+			t.Fatalf("(%s).CompareLower(%s), want: %v, got: %v\n", tt.r1, tt.r2, tt.want, got)
+		}
+
+		got = tt.r2.CompareUpper(tt.r1)
+		if -1*got != tt.want {
+			t.Fatalf("(%s).CompareLower(%s), want: %v, got: %v\n", tt.r2, tt.r1, tt.want, -1*got)
 		}
 	}
 }
