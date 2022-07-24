@@ -4,7 +4,7 @@
 //
 // For more advanced functionality IPRange implements the interval.Interface for fast lookups.
 //
-//	see also: github.com/gaissmai/interval
+// see also: https://github.com/gaissmai/interval
 package iprange
 
 import (
@@ -261,7 +261,7 @@ func (r IPRange) Remove(in []IPRange) []IPRange {
 // implement the interval.Interface
 
 // CompareLower implements the interval.Interface from the
-// package github.com/gaissmai/interval for fast lookups.
+// package https://github.com/gaissmai/interval for fast lookups.
 //
 // Returns an integer comparing the two first IPs.
 func (r IPRange) CompareLower(r2 IPRange) int {
@@ -269,7 +269,7 @@ func (r IPRange) CompareLower(r2 IPRange) int {
 }
 
 // CompareUpper implements the interval.Interface from the
-// package github.com/gaissmai/interval for fast lookups.
+// package https://github.com/gaissmai/interval for fast lookups.
 //
 // Returns an integer comparing the two last IPs.
 func (r IPRange) CompareUpper(r2 IPRange) int {

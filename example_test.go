@@ -59,14 +59,32 @@ func ExampleMerge() {
 
 func ExampleIPRange_Prefixes() {
 	r, _ := iprange.Parse("10.0.0.6-10.0.0.99")
-	fmt.Printf("%v\n", r.Prefixes())
+	fmt.Printf("%s -> Prefixes:\n", r)
+	for _, p := range r.Prefixes() {
+		fmt.Println(p)
+	}
+
+	fmt.Println()
 
 	r, _ = iprange.Parse("2001:db8::affe-2001:db8::ffff")
-	fmt.Printf("%v\n", r.Prefixes())
+	fmt.Printf("%s -> Prefixes:\n", r)
+	for _, p := range r.Prefixes() {
+		fmt.Println(p)
+	}
 
 	// Output:
-	// [10.0.0.6/31 10.0.0.8/29 10.0.0.16/28 10.0.0.32/27 10.0.0.64/27 10.0.0.96/30]
-	// [2001:db8::affe/127 2001:db8::b000/116 2001:db8::c000/114]
+	// 10.0.0.6-10.0.0.99 -> Prefixes:
+	// 10.0.0.6/31
+	// 10.0.0.8/29
+	// 10.0.0.16/28
+	// 10.0.0.32/27
+	// 10.0.0.64/27
+	// 10.0.0.96/30
+	//
+	// 2001:db8::affe-2001:db8::ffff -> Prefixes:
+	// 2001:db8::affe/127
+	// 2001:db8::b000/116
+	// 2001:db8::c000/114
 }
 
 func ExampleIPRange_Remove_v4() {
@@ -76,20 +94,36 @@ func ExampleIPRange_Remove_v4() {
 		mustParse("192.168.2.240-192.168.2.249"),
 	}
 
-	fmt.Printf("%v - %v\ndiff: %v\n", outer, inner, outer.Remove(inner))
+	fmt.Printf("outer: %v\n", outer)
+	fmt.Printf("inner: %v\n", inner)
+	fmt.Println("Result:")
+	for _, r := range outer.Remove(inner) {
+		fmt.Println(r)
+	}
 
 	// Output:
-	// 192.168.2.0/24 - [192.168.2.0/26 192.168.2.240-192.168.2.249]
-	// diff: [192.168.2.64-192.168.2.239 192.168.2.250-192.168.2.255]
+	// outer: 192.168.2.0/24
+	// inner: [192.168.2.0/26 192.168.2.240-192.168.2.249]
+	// Result:
+	// 192.168.2.64-192.168.2.239
+	// 192.168.2.250-192.168.2.255
 }
 
 func ExampleIPRange_Remove_v6() {
 	outer, _ := iprange.Parse("2001:db8:de00::/40")
 	inner := []iprange.IPRange{mustParse("2001:db8:dea0::/44")}
 
-	fmt.Printf("%v - %v\ndiff: %v\n", outer, inner, outer.Remove(inner))
+	fmt.Printf("outer: %v\n", outer)
+	fmt.Printf("inner: %v\n", inner)
+	fmt.Println("Result:")
+	for _, r := range outer.Remove(inner) {
+		fmt.Println(r)
+	}
 
 	// Output:
-	// 2001:db8:de00::/40 - [2001:db8:dea0::/44]
-	// diff: [2001:db8:de00::-2001:db8:de9f:ffff:ffff:ffff:ffff:ffff 2001:db8:deb0::-2001:db8:deff:ffff:ffff:ffff:ffff:ffff]
+	// outer: 2001:db8:de00::/40
+	// inner: [2001:db8:dea0::/44]
+	// Result:
+	// 2001:db8:de00::-2001:db8:de9f:ffff:ffff:ffff:ffff:ffff
+	// 2001:db8:deb0::-2001:db8:deff:ffff:ffff:ffff:ffff:ffff
 }
