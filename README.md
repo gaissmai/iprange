@@ -41,7 +41,7 @@ func (r *IPRange) UnmarshalText(text []byte) error
 func (r *IPRange) UnmarshalBinary(data []byte) error
 ```
 
-## Advanced
-For more advanced functionality IPRange implements the interval.Interface for fast lookups.
+## Advanced features
+For more advanced functionality IPRange implements the `interval.Interface` for fast lookups.
 
 see also: https://github.com/gaissmai/interval
