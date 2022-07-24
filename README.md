@@ -8,8 +8,40 @@
 
 `package iprange` is an extension to net/netip
 
-An additional type IPRange is defined and the most useful methods for it.
+An additional type IPRange is defined and the most useful methods for it. Not all IP address ranges in the wild are CIDRs,
+very often you have to deal with ranges not representable as a prefix. This library handels IP ranges and CIDRs transparently. 
 
+## API
+
+```go
+import "github.com/gaissmai/iprange"
+
+type IPRange
+
+func FromNetipPrefix(p netip.Prefix) IPRange
+func Parse(s string) (r IPRange, err error)
+
+func (r IPRange) String() string
+func (r IPRange) Addrs() (first, last netip.Addr)
+
+func Merge(in []IPRange) []IPRange
+func (r IPRange) Remove(in []IPRange) []IPRange
+
+func (r IPRange) Prefix() (prefix netip.Prefix, ok bool)
+func (r IPRange) Prefixes() []netip.Prefix
+func (r IPRange) PrefixesAppend(dst []netip.Prefix) []netip.Prefix
+
+func (r IPRange) CompareLower(r2 IPRange) int
+func (r IPRange) CompareUpper(r2 IPRange) int
+
+func (r IPRange) MarshalText() ([]byte, error)
+func (r IPRange) MarshalBinary() ([]byte, error)
+
+func (r *IPRange) UnmarshalText(text []byte) error
+func (r *IPRange) UnmarshalBinary(data []byte) error
+```
+
+## Advanced
 For more advanced functionality IPRange implements the interval.Interface for fast lookups.
 
 see also: https://github.com/gaissmai/interval
