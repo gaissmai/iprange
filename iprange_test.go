@@ -188,8 +188,24 @@ func TestMerge2(t *testing.T) {
 
 func TestRemoveCornerCases(t *testing.T) {
 	// nil
-	r := mustParseIPRange("::/0")
+	var r iprange.IPRange
 	rs := r.Remove(nil)
+
+	if rs != nil {
+		t.Errorf("(nil).Remove(nil), got %v, want %v", rs, nil)
+	}
+
+	// nil
+	r = mustParseIPRange("::/0")
+	rs = r.Remove(nil)
+
+	if rs[0] != r {
+		t.Errorf("Remove(nil), got %v, want %v", rs, []iprange.IPRange{r})
+	}
+
+	// zero value
+	r = mustParseIPRange("::/0")
+	rs = r.Remove([]iprange.IPRange{{}})
 
 	if rs[0] != r {
 		t.Errorf("Remove(nil), got %v, want %v", rs, []iprange.IPRange{r})
@@ -200,6 +216,13 @@ func TestRemoveCornerCases(t *testing.T) {
 	rs = r.Remove([]iprange.IPRange{r})
 	if rs != nil {
 		t.Errorf("Remove(self), got %v, want nil", rs)
+	}
+
+	// disjunct
+	r = mustParseIPRange("10.0.0.0/16")
+	rs = r.Remove([]iprange.IPRange{mustParseIPRange("::/0")})
+	if rs[0] != r {
+		t.Errorf("Remove(disjunct), got %v, want %v", rs, []iprange.IPRange{r})
 	}
 
 	// covers
