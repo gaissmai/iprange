@@ -35,6 +35,19 @@ func ExampleParse() {
 	// invalid IPRange      isPrefix: false
 }
 
+func ExampleIPRange_Addrs() {
+	first, last := mustParse("fe80::/10").Addrs()
+
+	fmt.Printf("Addrs() fe80::/10\n")
+	fmt.Printf("first:  %s\n", first)
+	fmt.Printf("last:   %s\n", last)
+
+	// Output:
+	// Addrs() fe80::/10
+	// first:  fe80::
+	// last:   febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+}
+
 func ExampleMerge() {
 	var rs []iprange.IPRange
 	for _, s := range []string{
