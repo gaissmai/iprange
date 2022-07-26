@@ -1,4 +1,4 @@
-// package iprange is an extension to net/netip.
+// Package iprange is an extension to net/netip.
 //
 // An additional type IPRange is defined and the most useful methods for it.
 //
@@ -56,9 +56,9 @@ var (
 // IP addresses as input are converted to /32 or /128 ranges.
 //
 // The hard part is done by netip.ParseAddr and netip.ParsePrefix from the stdlib.
-func Parse(s string) (r IPRange, err error) {
+func Parse(s string) (IPRange, error) {
 	if s == "" {
-		return r, errors.New("empty string")
+		return zeroValue, errors.New("empty string")
 	}
 
 	// addr/bits
@@ -66,7 +66,7 @@ func Parse(s string) (r IPRange, err error) {
 	if i >= 0 {
 		p, err := netip.ParsePrefix(s)
 		if err != nil {
-			return r, err
+			return zeroValue, err
 		}
 		return FromNetipPrefix(p), nil
 	}
@@ -76,23 +76,23 @@ func Parse(s string) (r IPRange, err error) {
 	if found {
 		first, err := netip.ParseAddr(ip)
 		if err != nil {
-			return r, err
+			return zeroValue, err
 		}
 
 		last, err := netip.ParseAddr(ip2)
 		if err != nil {
-			return r, err
+			return zeroValue, err
 		}
 
 		if first.Zone() != "" || last.Zone() != "" {
-			return r, errors.New("ip address MUST NOT have a zone")
+			return zeroValue, errors.New("ip address MUST NOT have a zone")
 		}
 
 		if first.Is4() && !last.Is4() || first.Is6() && !last.Is6() {
-			return r, errors.New("first and last address have different IP versions")
+			return zeroValue, errors.New("first and last address have different IP versions")
 		}
 		if last.Less(first) {
-			return r, errors.New("last address is less than first address")
+			return zeroValue, errors.New("last address is less than first address")
 		}
 		return IPRange{first, last}, nil
 	}
@@ -100,10 +100,10 @@ func Parse(s string) (r IPRange, err error) {
 	// an addr, or maybe just rubbish
 	addr, err := netip.ParseAddr(s)
 	if err != nil {
-		return r, err
+		return zeroValue, err
 	}
 	if addr.Zone() != "" {
-		return r, errors.New("ip address MUST NOT have a zone")
+		return zeroValue, errors.New("ip address MUST NOT have a zone")
 	}
 	return IPRange{addr, addr}, nil
 }
