@@ -230,34 +230,56 @@ func Merge(in []IPRange) []IPRange {
 	return result
 }
 
+func (a IPRange) isDisjunct(b IPRange) bool {
+	if a.last.Less(b.first) || b.last.Less(a.first) {
+		return true
+	}
+	return false
+}
+
+func (a IPRange) covers(b IPRange) bool {
+	if a.first.Compare(b.first) <= 0 && a.last.Compare(b.last) >= 0 {
+		return true
+	}
+	return false
+}
+
 // Remove the slice of IPRanges from receiver, returns the remaining IPRanges.
 func (r IPRange) Remove(in []IPRange) []IPRange {
 	if r == zeroValue {
 		return nil
 	}
 
-	// copy and sort
-	rs := make([]IPRange, len(in))
-	copy(rs, in)
-	sortRanges(rs)
+	// copy, sort, merge
+	merged := Merge(in)
+
+	// fast exit?
+	if len(merged) == 0 {
+		return []IPRange{r}
+	}
+	// all remove ranges are disjunct with r
+	if r.last.Less(merged[0].first) {
+		return []IPRange{r}
+	}
+	if merged[len(merged)-1].last.Less(r.first) {
+		return []IPRange{r}
+	}
 
 	var result []IPRange
-	for _, d := range rs {
+	for _, d := range merged {
+		// case order is important!
 		switch {
-		case d == zeroValue:
+		case d.isDisjunct(r):
 			// no-op
 			continue
-		case r.last.Less(d.first) || d.last.Less(r.first):
-			// disjunct, no-op
-			continue
-		case d.first.Compare(r.first) <= 0 && d.last.Compare(r.last) >= 0:
-			// d covers|equal r, mask rest
+		case d.covers(r):
+			// d covers r, d masks the rest
 			return result
 		case d.first.Compare(r.first) <= 0:
-			// move cursor forward
+			// left overlap, move cursor
 			r.first = d.last.Next()
 		case d.first.Compare(r.first) > 0:
-			// save [r.first, d.first-1)
+			// right overlap, save [r.first, d.first-1)
 			result = append(result, IPRange{r.first, d.first.Prev()})
 			// new r, (d.last, r.last]
 			r.first = d.last.Next()
