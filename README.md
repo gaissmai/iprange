@@ -20,7 +20,7 @@ type IPRange
 
 func Parse(s string) (IPRange, error)
 func FromNetipAddrs(first, last netip.Addr) (IPRange, error)
-func FromNetipPrefix(p netip.Prefix) IPRange
+func FromNetipPrefix(p netip.Prefix) (IPRange error)
 
 func (r IPRange) String() string
 func (r IPRange) Addrs() (first, last netip.Addr)
