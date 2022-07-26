@@ -68,7 +68,7 @@ func Parse(s string) (IPRange, error) {
 		if err != nil {
 			return zeroValue, err
 		}
-		return FromNetipPrefix(p), nil
+		return FromNetipPrefix(p)
 	}
 
 	// addr-addr
@@ -109,9 +109,12 @@ func Parse(s string) (IPRange, error) {
 }
 
 // FromNetipPrefix returns an IPRange from the standard library's netip.Prefix type.
-func FromNetipPrefix(p netip.Prefix) IPRange {
+func FromNetipPrefix(p netip.Prefix) (IPRange, error) {
+	if !p.IsValid() {
+		return zeroValue, errors.New("netip.Prefix is invalid")
+	}
 	first, last := extnetip.Range(p)
-	return IPRange{first, last}
+	return IPRange{first, last}, nil
 }
 
 // FromNetipAddrs returns an IPRange from the provided IP addresses.

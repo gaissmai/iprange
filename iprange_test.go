@@ -12,7 +12,13 @@ var (
 	mustParseAddr   = netip.MustParseAddr
 	mustParsePrefix = netip.MustParsePrefix
 
-	fromNetipPrefix = iprange.FromNetipPrefix
+	mustFromNetipPrefix = func(p netip.Prefix) iprange.IPRange {
+		r, err := iprange.FromNetipPrefix(p)
+		if err != nil {
+			panic(err)
+		}
+		return r
+	}
 
 	mustParseIPRange = func(s string) iprange.IPRange {
 		r, err := iprange.Parse(s)
@@ -156,7 +162,7 @@ func TestFromPrefix(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		r := fromNetipPrefix(tt.pfx)
+		r := mustFromNetipPrefix(tt.pfx)
 		first, last := r.Addrs()
 		if first != tt.first || last != tt.last {
 			t.Fatalf("FromPrefix(%s), want: (%s, %s), got: (%s, %s)", tt.pfx, tt.first, tt.last, first, last)
