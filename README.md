@@ -18,8 +18,9 @@ import "github.com/gaissmai/iprange"
 
 type IPRange
 
-func FromNetipPrefix(p netip.Prefix) IPRange
 func Parse(s string) (r IPRange, err error)
+func FromNetipAddrs(first, last netip.Addr) (IPRange, error)
+func FromNetipPrefix(p netip.Prefix) IPRange
 
 func (r IPRange) String() string
 func (r IPRange) Addrs() (first, last netip.Addr)
