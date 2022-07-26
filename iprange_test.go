@@ -23,6 +23,76 @@ var (
 	}
 )
 
+func TestFromNetipAddrs(t *testing.T) {
+	tests := []struct {
+		first netip.Addr
+		last  netip.Addr
+		ok    bool
+	}{
+		{
+			first: mustParseAddr("1.2.3.4"),
+			last:  mustParseAddr("5.6.7.8"),
+			ok:    true,
+		},
+		{
+			first: mustParseAddr("fe80::1"),
+			last:  mustParseAddr("fe80::2"),
+			ok:    true,
+		},
+		{
+			first: mustParseAddr("5.6.7.8"),
+			last:  mustParseAddr("1.2.3.4"),
+			ok:    false,
+		},
+		{
+			first: netip.Addr{},
+			last:  mustParseAddr("5.6.7.8"),
+			ok:    false,
+		},
+		{
+			first: mustParseAddr("5.6.7.8"),
+			last:  netip.Addr{},
+			ok:    false,
+		},
+		{
+			first: mustParseAddr("fe80::1"),
+			last:  mustParseAddr("5.6.7.8"),
+			ok:    false,
+		},
+		{
+			first: mustParseAddr("5.6.7.8"),
+			last:  mustParseAddr("fe80::1"),
+			ok:    false,
+		},
+		{
+			first: mustParseAddr("5.6.7.8"),
+			last:  mustParseAddr("fe80::1"),
+			ok:    false,
+		},
+		{
+			first: mustParseAddr("fe80::1"),
+			last:  mustParseAddr("fe80::2%eth1"),
+			ok:    false,
+		},
+		{
+			first: mustParseAddr("fe80::1%eth1"),
+			last:  mustParseAddr("fe80::2"),
+			ok:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		ok := true
+		_, err := iprange.FromNetipAddrs(tt.first, tt.last)
+		if err != nil {
+			ok = false
+		}
+		if ok != tt.ok {
+			t.Fatalf("FromNetipAddrs(%s, %s), got: %v, want: %v\n", tt.first, tt.last, ok, tt.ok)
+		}
+	}
+}
+
 func TestParseRangeInvalid(t *testing.T) {
 	tests := []string{
 		"::ffff:0.0.0.0-0.0.0.1",

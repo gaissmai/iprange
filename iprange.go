@@ -114,6 +114,23 @@ func FromNetipPrefix(p netip.Prefix) IPRange {
 	return IPRange{first, last}
 }
 
+// FromNetipAddrs returns an IPRange from the provided IP addresses.
+//
+// IP addresses with zones are not allowed.
+func FromNetipAddrs(first, last netip.Addr) (IPRange, error) {
+	if !((first.Is4() && last.Is4()) || (first.Is6() && last.Is6())) {
+		return zeroValue, errors.New("invalid or different IP versions")
+	}
+	if first.Zone() != "" || last.Zone() != "" {
+		return zeroValue, errors.New("ip address MUST NOT have a zone")
+	}
+	if last.Less(first) {
+		return zeroValue, errors.New("last address is less than first address")
+	}
+
+	return IPRange{first, last}, nil
+}
+
 // Addrs returns the first and last IP address of the IPRange.
 func (r IPRange) Addrs() (first, last netip.Addr) {
 	return r.first, r.last
