@@ -24,6 +24,7 @@ type IPRange struct{ ... }
 
   func (r IPRange) Addrs() (first, last netip.Addr)
   func (r IPRange) String() string
+  func (r IPRange) IsValid() bool
 
   func Merge(in []IPRange) (out []IPRange)
   func (r IPRange) Remove(in []IPRange) (out []IPRange)

@@ -134,6 +134,11 @@ func FromNetipAddrs(first, last netip.Addr) (IPRange, error) {
 	return IPRange{first, last}, nil
 }
 
+// IsValid reports whether r is a valid IPRange.
+func (r IPRange) IsValid() bool {
+	return r != zeroValue
+}
+
 // Addrs returns the first and last IP address of the IPRange.
 func (r IPRange) Addrs() (first, last netip.Addr) {
 	return r.first, r.last
