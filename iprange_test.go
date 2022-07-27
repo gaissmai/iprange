@@ -21,7 +21,7 @@ var (
 	}
 
 	mustParseIPRange = func(s string) iprange.IPRange {
-		r, err := iprange.Parse(s)
+		r, err := iprange.FromString(s)
 		if err != nil {
 			panic(err)
 		}
@@ -117,7 +117,7 @@ func TestParseRangeInvalid(t *testing.T) {
 	}
 
 	for _, s := range tests {
-		if r, err := iprange.Parse(s); err == nil {
+		if r, err := iprange.FromString(s); err == nil {
 			t.Fatalf("ParseRange(%s); got %q, want err; got %v", s, r, err)
 		}
 	}
@@ -358,7 +358,7 @@ func TestRemoveCornerCases(t *testing.T) {
 }
 
 func TestRemoveIANAv6(t *testing.T) {
-	b, _ := iprange.Parse("::/0")
+	b, _ := iprange.FromString("::/0")
 
 	var inner []iprange.IPRange
 	for _, s := range []string{

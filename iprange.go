@@ -38,7 +38,7 @@ var (
 	invalidStr = "invalid IPRange"
 )
 
-// Parse returns the input string as type IPRange.
+// FromString parses the input string and returns an IPRange.
 //
 // Returns an error on invalid input.
 //
@@ -56,7 +56,7 @@ var (
 // IP addresses as input are converted to /32 or /128 ranges.
 //
 // The hard part is done by netip.ParseAddr and netip.ParsePrefix from the stdlib.
-func Parse(s string) (IPRange, error) {
+func FromString(s string) (IPRange, error) {
 	if s == "" {
 		return zeroValue, errors.New("empty string")
 	}
@@ -183,7 +183,7 @@ func (r IPRange) String() string {
 // Merge adjacent and overlapping IPRanges.
 //
 // Remove dups and subsets and invalid ranges, returns the remaining IPRanges sorted.
-func Merge(in []IPRange) []IPRange {
+func Merge(in []IPRange) (out []IPRange) {
 	if len(in) == 0 {
 		return nil
 	}
@@ -193,21 +193,19 @@ func Merge(in []IPRange) []IPRange {
 	copy(rs, in)
 	sortRanges(rs)
 
-	var result []IPRange
-
 	for _, this := range rs {
 		if this == zeroValue {
 			continue
 		}
 
 		// starting point
-		if result == nil {
-			result = append(result, this)
+		if out == nil {
+			out = append(out, this)
 			continue
 		}
 
 		// take ptr to last result item
-		topic := &result[len(result)-1]
+		topic := &out[len(out)-1]
 
 		// compare topic with this range
 		// case order is VERY important!
@@ -217,7 +215,7 @@ func Merge(in []IPRange) []IPRange {
 			topic.last = this.last
 		case topic.last.Less(this.first):
 			// ranges are disjoint [f...l]....[f...l]
-			result = append(result, this)
+			out = append(out, this)
 		case topic.last.Less(this.last):
 			// partial overlap [f......l]
 			//                       [f....l]
@@ -227,7 +225,7 @@ func Merge(in []IPRange) []IPRange {
 		}
 	}
 
-	return result
+	return
 }
 
 func (a IPRange) isDisjunct(b IPRange) bool {
@@ -245,7 +243,7 @@ func (a IPRange) covers(b IPRange) bool {
 }
 
 // Remove the slice of IPRanges from receiver, returns the remaining IPRanges.
-func (r IPRange) Remove(in []IPRange) []IPRange {
+func (r IPRange) Remove(in []IPRange) (out []IPRange) {
 	if r == zeroValue {
 		return nil
 	}
@@ -265,7 +263,6 @@ func (r IPRange) Remove(in []IPRange) []IPRange {
 		return []IPRange{r}
 	}
 
-	var result []IPRange
 	for _, d := range merged {
 		// case order is important!
 		switch {
@@ -274,13 +271,13 @@ func (r IPRange) Remove(in []IPRange) []IPRange {
 			continue
 		case d.covers(r):
 			// d covers r, d masks the rest
-			return result
+			return out
 		case d.first.Compare(r.first) <= 0:
 			// left overlap, move cursor
 			r.first = d.last.Next()
 		case d.first.Compare(r.first) > 0:
 			// right overlap, save [r.first, d.first-1)
-			result = append(result, IPRange{r.first, d.first.Prev()})
+			out = append(out, IPRange{r.first, d.first.Prev()})
 			// new r, (d.last, r.last]
 			r.first = d.last.Next()
 		default:
@@ -288,17 +285,17 @@ func (r IPRange) Remove(in []IPRange) []IPRange {
 		}
 		// overflow from d.last.Next()
 		if !r.first.IsValid() {
-			return result
+			return out
 		}
 		// cursor moved behind r.last
 		if r.last.Less(r.first) {
-			return result
+			return out
 		}
 	}
 	// save the rest
-	result = append(result, r)
+	out = append(out, r)
 
-	return result
+	return out
 }
 
 // #########################################################################################
@@ -348,7 +345,7 @@ func (r *IPRange) UnmarshalText(text []byte) error {
 	}
 
 	var err error
-	*r, err = Parse(string(text))
+	*r, err = FromString(string(text))
 	return err
 }
 

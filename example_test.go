@@ -7,7 +7,7 @@ import (
 )
 
 func mustParse(s string) iprange.IPRange {
-	b, err := iprange.Parse(s)
+	b, err := iprange.FromString(s)
 	if err != nil {
 		panic(err)
 	}
@@ -19,13 +19,13 @@ func isPrefix(p iprange.IPRange) bool {
 	return ok
 }
 
-func ExampleParse() {
+func ExampleFromString() {
 	for _, s := range []string{
 		"fe80::1-fe80::2",         // as range
 		"10.0.0.0-11.255.255.255", // as range but true CIDR, see output
 		"",                        // invalid
 	} {
-		r, _ := iprange.Parse(s)
+		r, _ := iprange.FromString(s)
 		fmt.Printf("%-20s isPrefix: %5v\n", r, isPrefix(r))
 	}
 
@@ -59,7 +59,7 @@ func ExampleMerge() {
 		"fe80:0000:0000:0000:fe2d:5eff:fef0:fc64/128",
 		"fe80::/10",
 	} {
-		b, _ := iprange.Parse(s)
+		b, _ := iprange.FromString(s)
 		rs = append(rs, b)
 	}
 
@@ -71,7 +71,7 @@ func ExampleMerge() {
 }
 
 func ExampleIPRange_Prefixes() {
-	r, _ := iprange.Parse("10.0.0.6-10.0.0.99")
+	r, _ := iprange.FromString("10.0.0.6-10.0.0.99")
 	fmt.Printf("%s -> Prefixes:\n", r)
 	for _, p := range r.Prefixes() {
 		fmt.Println(p)
@@ -79,7 +79,7 @@ func ExampleIPRange_Prefixes() {
 
 	fmt.Println()
 
-	r, _ = iprange.Parse("2001:db8::affe-2001:db8::ffff")
+	r, _ = iprange.FromString("2001:db8::affe-2001:db8::ffff")
 	fmt.Printf("%s -> Prefixes:\n", r)
 	for _, p := range r.Prefixes() {
 		fmt.Println(p)
@@ -101,7 +101,7 @@ func ExampleIPRange_Prefixes() {
 }
 
 func ExampleIPRange_Remove_v4() {
-	outer, _ := iprange.Parse("192.168.2.0/24")
+	outer, _ := iprange.FromString("192.168.2.0/24")
 	inner := []iprange.IPRange{
 		mustParse("192.168.2.0/26"),
 		mustParse("192.168.2.240-192.168.2.249"),
@@ -123,7 +123,7 @@ func ExampleIPRange_Remove_v4() {
 }
 
 func ExampleIPRange_Remove_v6() {
-	outer, _ := iprange.Parse("2001:db8:de00::/40")
+	outer, _ := iprange.FromString("2001:db8:de00::/40")
 	inner := []iprange.IPRange{mustParse("2001:db8:dea0::/44")}
 
 	fmt.Printf("outer: %v\n", outer)
