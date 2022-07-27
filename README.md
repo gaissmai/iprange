@@ -18,15 +18,15 @@ import "github.com/gaissmai/iprange"
 
 type IPRange
 
-func Parse(s string) (IPRange, error)
+func FromString(s string) (IPRange, error)
 func FromNetipAddrs(first, last netip.Addr) (IPRange, error)
-func FromNetipPrefix(p netip.Prefix) (IPRange error)
+func FromNetipPrefix(p netip.Prefix) (IPRange, error)
 
-func (r IPRange) String() string
 func (r IPRange) Addrs() (first, last netip.Addr)
+func (r IPRange) String() string
 
-func Merge(in []IPRange) []IPRange
-func (r IPRange) Remove(in []IPRange) []IPRange
+func Merge(in []IPRange) (out []IPRange)
+func (r IPRange) Remove(in []IPRange) (out []IPRange)
 
 func (r IPRange) Prefix() (prefix netip.Prefix, ok bool)
 func (r IPRange) Prefixes() []netip.Prefix
@@ -35,11 +35,11 @@ func (r IPRange) PrefixesAppend(dst []netip.Prefix) []netip.Prefix
 func (r IPRange) CompareLower(r2 IPRange) int
 func (r IPRange) CompareUpper(r2 IPRange) int
 
-func (r IPRange) MarshalText() ([]byte, error)
 func (r IPRange) MarshalBinary() ([]byte, error)
+func (r IPRange) MarshalText() ([]byte, error)
 
-func (r *IPRange) UnmarshalText(text []byte) error
 func (r *IPRange) UnmarshalBinary(data []byte) error
+func (r *IPRange) UnmarshalText(text []byte) error
 ```
 
 ## Advanced features
