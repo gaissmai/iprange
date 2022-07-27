@@ -7,11 +7,11 @@ import (
 )
 
 func mustParse(s string) iprange.IPRange {
-	b, err := iprange.FromString(s)
+	r, err := iprange.FromString(s)
 	if err != nil {
 		panic(err)
 	}
-	return b
+	return r
 }
 
 func isPrefix(p iprange.IPRange) bool {
@@ -59,8 +59,8 @@ func ExampleMerge() {
 		"fe80:0000:0000:0000:fe2d:5eff:fef0:fc64/128",
 		"fe80::/10",
 	} {
-		b, _ := iprange.FromString(s)
-		rs = append(rs, b)
+		r, _ := iprange.FromString(s)
+		rs = append(rs, r)
 	}
 
 	merged := iprange.Merge(rs)
