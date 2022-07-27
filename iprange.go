@@ -234,17 +234,11 @@ func Merge(in []IPRange) (out []IPRange) {
 }
 
 func (a IPRange) isDisjunct(b IPRange) bool {
-	if a.last.Less(b.first) || b.last.Less(a.first) {
-		return true
-	}
-	return false
+	return a.last.Less(b.first) || b.last.Less(a.first)
 }
 
 func (a IPRange) covers(b IPRange) bool {
-	if a.first.Compare(b.first) <= 0 && a.last.Compare(b.last) >= 0 {
-		return true
-	}
-	return false
+	return a.first.Compare(b.first) <= 0 && a.last.Compare(b.last) >= 0
 }
 
 // Remove the slice of IPRanges from receiver, returns the remaining IPRanges.
@@ -268,23 +262,23 @@ func (r IPRange) Remove(in []IPRange) (out []IPRange) {
 		return []IPRange{r}
 	}
 
-	for _, d := range merged {
+	for _, m := range merged {
 		// case order is important!
 		switch {
-		case d.isDisjunct(r):
+		case m.isDisjunct(r):
 			// no-op
 			continue
-		case d.covers(r):
-			// d covers r, d masks the rest
+		case m.covers(r):
+			// m covers r, m masks the rest
 			return out
-		case d.first.Compare(r.first) <= 0:
+		case m.first.Compare(r.first) <= 0:
 			// left overlap, move cursor
-			r.first = d.last.Next()
-		case d.first.Compare(r.first) > 0:
+			r.first = m.last.Next()
+		case m.first.Compare(r.first) > 0:
 			// right overlap, save [r.first, d.first-1)
-			out = append(out, IPRange{r.first, d.first.Prev()})
+			out = append(out, IPRange{r.first, m.first.Prev()})
 			// new r, (d.last, r.last]
-			r.first = d.last.Next()
+			r.first = m.last.Next()
 		default:
 			panic("logic error")
 		}

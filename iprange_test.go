@@ -168,6 +168,12 @@ func TestFromPrefix(t *testing.T) {
 			t.Fatalf("FromPrefix(%s), want: (%s, %s), got: (%s, %s)", tt.pfx, tt.first, tt.last, first, last)
 		}
 	}
+
+	// corner case
+	r, err := iprange.FromNetipPrefix(netip.Prefix{})
+	if r.IsValid() || err == nil {
+		t.Fatalf("FomPrefix() of invalid prefix, want: inavlid range and error, got: (%v, %v)", r, err)
+	}
 }
 
 func TestMerge(t *testing.T) {
@@ -294,11 +300,26 @@ func TestRemoveCornerCases(t *testing.T) {
 		t.Errorf("Remove(self), got %v, want nil", rs)
 	}
 
-	// disjunct
+	// disjunct after
 	r = mustParseIPRange("10.0.0.0/16")
 	rs = r.Remove([]iprange.IPRange{mustParseIPRange("::/0")})
 	if rs[0] != r {
 		t.Errorf("Remove(disjunct), got %v, want %v", rs, []iprange.IPRange{r})
+	}
+
+	// disjunct before
+	r = mustParseIPRange("::/0")
+	rs = r.Remove([]iprange.IPRange{mustParseIPRange("0.0.0.0/0")})
+	if rs[0] != r {
+		t.Errorf("Remove(disjunct), got %v, want %v", rs, []iprange.IPRange{r})
+	}
+
+	// disjunct in loop
+	r = mustParseIPRange("0.0.0.0/0")
+	rs = r.Remove([]iprange.IPRange{mustParseIPRange("0.0.0.0/1"), mustParseIPRange("::/0")})
+	wantRs := []iprange.IPRange{mustParseIPRange("128.0.0.0/1")}
+	if !reflect.DeepEqual(rs, wantRs) {
+		t.Errorf("Remove(...), got %v, want %v", rs, wantRs)
 	}
 
 	// covers
@@ -842,7 +863,7 @@ func TestCompareUpper(t *testing.T) {
 		}
 
 		got = tt.r2.CompareUpper(tt.r1)
-		if -1*got != tt.want {
+		if -1*(got) != tt.want {
 			t.Fatalf("(%s).CompareLower(%s), want: %v, got: %v\n", tt.r2, tt.r1, tt.want, -1*got)
 		}
 	}
