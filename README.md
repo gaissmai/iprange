@@ -1,5 +1,6 @@
 # package iprange
 [![Go Reference](https://pkg.go.dev/badge/github.com/gaissmai/iprange.svg)](https://pkg.go.dev/github.com/gaissmai/iprange#section-documentation)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/gaissmai/iprange)
 [![CI](https://github.com/gaissmai/iprange/actions/workflows/go.yml/badge.svg)](https://github.com/gaissmai/iprange/actions/workflows/go.yml)
 [![Coverage Status](https://coveralls.io/repos/github/gaissmai/iprange/badge.svg?branch=master)](https://coveralls.io/github/gaissmai/iprange?branch=master)
 [![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
