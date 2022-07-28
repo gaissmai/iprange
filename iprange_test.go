@@ -12,15 +12,15 @@ var (
 	mustParseAddr   = netip.MustParseAddr
 	mustParsePrefix = netip.MustParsePrefix
 
-	mustFromNetipPrefix = func(p netip.Prefix) iprange.IPRange {
-		r, err := iprange.FromNetipPrefix(p)
+	mustFromPrefix = func(p netip.Prefix) iprange.IPRange {
+		r, err := iprange.FromPrefix(p)
 		if err != nil {
 			panic(err)
 		}
 		return r
 	}
 
-	mustParseIPRange = func(s string) iprange.IPRange {
+	mustFromString = func(s string) iprange.IPRange {
 		r, err := iprange.FromString(s)
 		if err != nil {
 			panic(err)
@@ -29,7 +29,7 @@ var (
 	}
 )
 
-func TestFromNetipAddrs(t *testing.T) {
+func TestFromAddrs(t *testing.T) {
 	tests := []struct {
 		first netip.Addr
 		last  netip.Addr
@@ -89,17 +89,17 @@ func TestFromNetipAddrs(t *testing.T) {
 
 	for _, tt := range tests {
 		ok := true
-		_, err := iprange.FromNetipAddrs(tt.first, tt.last)
+		_, err := iprange.FromAddrs(tt.first, tt.last)
 		if err != nil {
 			ok = false
 		}
 		if ok != tt.ok {
-			t.Fatalf("FromNetipAddrs(%s, %s), got: %v, want: %v\n", tt.first, tt.last, ok, tt.ok)
+			t.Fatalf("FromAddrs(%s, %s), got: %v, want: %v\n", tt.first, tt.last, ok, tt.ok)
 		}
 	}
 }
 
-func TestParseRangeInvalid(t *testing.T) {
+func TestFromStringInvalid(t *testing.T) {
 	tests := []string{
 		"::ffff:0.0.0.0-0.0.0.1",
 		"0.0.0.0-::ffff:0.0.0.1",
@@ -162,7 +162,7 @@ func TestFromPrefix(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		r := mustFromNetipPrefix(tt.pfx)
+		r := mustFromPrefix(tt.pfx)
 		first, last := r.Addrs()
 		if first != tt.first || last != tt.last {
 			t.Fatalf("FromPrefix(%s), want: (%s, %s), got: (%s, %s)", tt.pfx, tt.first, tt.last, first, last)
@@ -170,7 +170,7 @@ func TestFromPrefix(t *testing.T) {
 	}
 
 	// corner case
-	r, err := iprange.FromNetipPrefix(netip.Prefix{})
+	r, err := iprange.FromPrefix(netip.Prefix{})
 	if r.IsValid() || err == nil {
 		t.Fatalf("FomPrefix() of invalid prefix, want: inavlid range and error, got: (%v, %v)", r, err)
 	}
@@ -190,24 +190,24 @@ func TestMerge(t *testing.T) {
 			want: nil,
 		},
 		{
-			in:   []iprange.IPRange{{}, mustParseIPRange("1.2.3.4-5.6.7.8")},
-			want: []iprange.IPRange{mustParseIPRange("1.2.3.4-5.6.7.8")},
+			in:   []iprange.IPRange{{}, mustFromString("1.2.3.4-5.6.7.8")},
+			want: []iprange.IPRange{mustFromString("1.2.3.4-5.6.7.8")},
 		},
 		{
-			in:   []iprange.IPRange{{}, {}, mustParseIPRange("::/64"), {}, mustParseIPRange("1.2.3.4-5.6.7.8")},
-			want: []iprange.IPRange{mustParseIPRange("1.2.3.4-5.6.7.8"), mustParseIPRange("::/64")},
+			in:   []iprange.IPRange{{}, {}, mustFromString("::/64"), {}, mustFromString("1.2.3.4-5.6.7.8")},
+			want: []iprange.IPRange{mustFromString("1.2.3.4-5.6.7.8"), mustFromString("::/64")},
 		},
 		{
-			in:   []iprange.IPRange{mustParseIPRange("1.2.3.4-5.6.7.8"), mustParseIPRange("5.6.7.0-10.0.0.0")},
-			want: []iprange.IPRange{mustParseIPRange("1.2.3.4-10.0.0.0")},
+			in:   []iprange.IPRange{mustFromString("1.2.3.4-5.6.7.8"), mustFromString("5.6.7.0-10.0.0.0")},
+			want: []iprange.IPRange{mustFromString("1.2.3.4-10.0.0.0")},
 		},
 		{
-			in:   []iprange.IPRange{mustParseIPRange("1.2.3.4-5.6.7.8"), mustParseIPRange("5.6.7.9-10.0.0.0")},
-			want: []iprange.IPRange{mustParseIPRange("1.2.3.4-10.0.0.0")},
+			in:   []iprange.IPRange{mustFromString("1.2.3.4-5.6.7.8"), mustFromString("5.6.7.9-10.0.0.0")},
+			want: []iprange.IPRange{mustFromString("1.2.3.4-10.0.0.0")},
 		},
 		{
-			in:   []iprange.IPRange{mustParseIPRange("2001:db8::4/126"), mustParseIPRange("2001:db8::8/127")},
-			want: []iprange.IPRange{mustParseIPRange("2001:db8::4-2001:db8::9")},
+			in:   []iprange.IPRange{mustFromString("2001:db8::4/126"), mustFromString("2001:db8::8/127")},
+			want: []iprange.IPRange{mustFromString("2001:db8::4-2001:db8::9")},
 		},
 	}
 
@@ -221,32 +221,32 @@ func TestMerge(t *testing.T) {
 
 func TestMerge2(t *testing.T) {
 	rs := []iprange.IPRange{
-		mustParseIPRange("0.0.0.0/0"),
-		mustParseIPRange("10.0.0.15/32"),
-		mustParseIPRange("10.0.0.16/28"),
-		mustParseIPRange("10.0.0.32/27"),
-		mustParseIPRange("10.0.0.64/26"),
-		mustParseIPRange("10.0.0.128/26"),
-		mustParseIPRange("10.0.0.192/27"),
-		mustParseIPRange("134.60.0.0/16"),
-		mustParseIPRange("134.60.0.255/24"),
-		mustParseIPRange("193.197.62.192/29"),
-		mustParseIPRange("193.197.64.0/22"),
-		mustParseIPRange("193.197.228.0/22"),
-		mustParseIPRange("::/0"),
-		mustParseIPRange("::-::ffff"),
-		mustParseIPRange("2001:7c0:900::/48"),
-		mustParseIPRange("2001:7c0:900::/49"),
-		mustParseIPRange("2001:7c0:900::/52"),
-		mustParseIPRange("2001:7c0:900::/53"),
-		mustParseIPRange("2001:7c0:900:800::/56"),
-		mustParseIPRange("2001:7c0:900:800::/64"),
+		mustFromString("0.0.0.0/0"),
+		mustFromString("10.0.0.15/32"),
+		mustFromString("10.0.0.16/28"),
+		mustFromString("10.0.0.32/27"),
+		mustFromString("10.0.0.64/26"),
+		mustFromString("10.0.0.128/26"),
+		mustFromString("10.0.0.192/27"),
+		mustFromString("134.60.0.0/16"),
+		mustFromString("134.60.0.255/24"),
+		mustFromString("193.197.62.192/29"),
+		mustFromString("193.197.64.0/22"),
+		mustFromString("193.197.228.0/22"),
+		mustFromString("::/0"),
+		mustFromString("::-::ffff"),
+		mustFromString("2001:7c0:900::/48"),
+		mustFromString("2001:7c0:900::/49"),
+		mustFromString("2001:7c0:900::/52"),
+		mustFromString("2001:7c0:900::/53"),
+		mustFromString("2001:7c0:900:800::/56"),
+		mustFromString("2001:7c0:900:800::/64"),
 	}
 	got := iprange.Merge(rs)
 
 	want := []iprange.IPRange{
-		mustParseIPRange("0.0.0.0/0"),
-		mustParseIPRange("::/0"),
+		mustFromString("0.0.0.0/0"),
+		mustFromString("::/0"),
 	}
 
 	if !reflect.DeepEqual(got, want) {
@@ -259,8 +259,8 @@ func TestMerge2(t *testing.T) {
 		t.Errorf("Merge() nil slice should return nil, got %v\n", got)
 	}
 
-	rs = []iprange.IPRange{mustParseIPRange("0.0.0.0/8")}
-	want = []iprange.IPRange{mustParseIPRange("0.0.0.0/8")}
+	rs = []iprange.IPRange{mustFromString("0.0.0.0/8")}
+	want = []iprange.IPRange{mustFromString("0.0.0.0/8")}
 	got = iprange.Merge(rs)
 
 	if !reflect.DeepEqual(got, want) {
@@ -278,7 +278,7 @@ func TestRemoveCornerCases(t *testing.T) {
 	}
 
 	// nil
-	r = mustParseIPRange("::/0")
+	r = mustFromString("::/0")
 	rs = r.Remove(nil)
 
 	if rs[0] != r {
@@ -286,7 +286,7 @@ func TestRemoveCornerCases(t *testing.T) {
 	}
 
 	// zero value
-	r = mustParseIPRange("::/0")
+	r = mustFromString("::/0")
 	rs = r.Remove([]iprange.IPRange{{}})
 
 	if rs[0] != r {
@@ -294,85 +294,85 @@ func TestRemoveCornerCases(t *testing.T) {
 	}
 
 	// self
-	r = mustParseIPRange("::/0")
+	r = mustFromString("::/0")
 	rs = r.Remove([]iprange.IPRange{r})
 	if rs != nil {
 		t.Errorf("Remove(self), got %v, want nil", rs)
 	}
 
 	// disjunct after
-	r = mustParseIPRange("10.0.0.0/16")
-	rs = r.Remove([]iprange.IPRange{mustParseIPRange("::/0")})
+	r = mustFromString("10.0.0.0/16")
+	rs = r.Remove([]iprange.IPRange{mustFromString("::/0")})
 	if rs[0] != r {
 		t.Errorf("Remove(disjunct), got %v, want %v", rs, []iprange.IPRange{r})
 	}
 
 	// disjunct before
-	r = mustParseIPRange("::/0")
-	rs = r.Remove([]iprange.IPRange{mustParseIPRange("0.0.0.0/0")})
+	r = mustFromString("::/0")
+	rs = r.Remove([]iprange.IPRange{mustFromString("0.0.0.0/0")})
 	if rs[0] != r {
 		t.Errorf("Remove(disjunct), got %v, want %v", rs, []iprange.IPRange{r})
 	}
 
 	// disjunct in loop
-	r = mustParseIPRange("0.0.0.0/0")
-	rs = r.Remove([]iprange.IPRange{mustParseIPRange("0.0.0.0/1"), mustParseIPRange("::/0")})
-	wantRs := []iprange.IPRange{mustParseIPRange("128.0.0.0/1")}
+	r = mustFromString("0.0.0.0/0")
+	rs = r.Remove([]iprange.IPRange{mustFromString("0.0.0.0/1"), mustFromString("::/0")})
+	wantRs := []iprange.IPRange{mustFromString("128.0.0.0/1")}
 	if !reflect.DeepEqual(rs, wantRs) {
 		t.Errorf("Remove(...), got %v, want %v", rs, wantRs)
 	}
 
 	// covers
-	r = mustParseIPRange("10.0.0.0/16")
-	rs = r.Remove([]iprange.IPRange{mustParseIPRange("10.0.0.0/8")})
+	r = mustFromString("10.0.0.0/16")
+	rs = r.Remove([]iprange.IPRange{mustFromString("10.0.0.0/8")})
 	if rs != nil {
 		t.Errorf("Remove(coverage), got %v, want nil", rs)
 	}
 
 	// overflow
-	r = mustParseIPRange("0.0.0.0/0")
-	rs = r.Remove([]iprange.IPRange{mustParseIPRange("255.255.255.255")})
-	want := mustParseIPRange("0.0.0.0-255.255.255.254")
+	r = mustFromString("0.0.0.0/0")
+	rs = r.Remove([]iprange.IPRange{mustFromString("255.255.255.255")})
+	want := mustFromString("0.0.0.0-255.255.255.254")
 	if rs[0] != want {
 		t.Errorf("Remove(overflow), got %v, want %v", rs, want)
 	}
 
 	// base > last
-	r = mustParseIPRange("10.0.0.0/8")
-	rs = r.Remove([]iprange.IPRange{mustParseIPRange("10.128.0.0/9")})
-	want = mustParseIPRange("10.0.0.0/9")
+	r = mustFromString("10.0.0.0/8")
+	rs = r.Remove([]iprange.IPRange{mustFromString("10.128.0.0/9")})
+	want = mustFromString("10.0.0.0/9")
 	if rs[0] != want {
 		t.Errorf("Remove(base>last), got %v, want %v", rs, want)
 	}
 
 	// left overlap v4
-	r = mustParseIPRange("10.0.0.5-10.0.0.15")
-	rs = r.Remove([]iprange.IPRange{mustParseIPRange("10.0.0.3-10.0.0.10")})
-	want = mustParseIPRange("10.0.0.11-10.0.0.15")
+	r = mustFromString("10.0.0.5-10.0.0.15")
+	rs = r.Remove([]iprange.IPRange{mustFromString("10.0.0.3-10.0.0.10")})
+	want = mustFromString("10.0.0.11-10.0.0.15")
 	if rs[0] != want {
 		t.Errorf("Remove(leftOverlapV4), got %v, want %v", rs, want)
 	}
 
 	// right overlap v4
-	r = mustParseIPRange("10.0.0.4-10.0.0.15")
-	rs = r.Remove([]iprange.IPRange{mustParseIPRange("10.0.0.6-10.0.0.19")})
-	want = mustParseIPRange("10.0.0.4-10.0.0.5")
+	r = mustFromString("10.0.0.4-10.0.0.15")
+	rs = r.Remove([]iprange.IPRange{mustFromString("10.0.0.6-10.0.0.19")})
+	want = mustFromString("10.0.0.4-10.0.0.5")
 	if rs[0] != want {
 		t.Errorf("Remove(leftOverlapV4), got %v, want %v", rs, want)
 	}
 
 	// left overlap v6
-	r = mustParseIPRange("2001:db8::17-2001:db8::177")
-	rs = r.Remove([]iprange.IPRange{mustParseIPRange("2001:db8::14-2001:db8::137")})
-	want = mustParseIPRange("2001:db8::138-2001:db8::177")
+	r = mustFromString("2001:db8::17-2001:db8::177")
+	rs = r.Remove([]iprange.IPRange{mustFromString("2001:db8::14-2001:db8::137")})
+	want = mustFromString("2001:db8::138-2001:db8::177")
 	if rs[0] != want {
 		t.Errorf("Remove(leftOverlapV4), got %v, want %v", rs, want)
 	}
 
 	// right overlap v6
-	r = mustParseIPRange("2001:db8::17-2001:db8::177")
-	rs = r.Remove([]iprange.IPRange{mustParseIPRange("2001:db8::3f-2001:db8::fff")})
-	want = mustParseIPRange("2001:db8::17-2001:db8::3e")
+	r = mustFromString("2001:db8::17-2001:db8::177")
+	rs = r.Remove([]iprange.IPRange{mustFromString("2001:db8::3f-2001:db8::fff")})
+	want = mustFromString("2001:db8::17-2001:db8::3e")
 	if rs[0] != want {
 		t.Errorf("Remove(leftOverlapV4), got %v, want %v", rs, want)
 	}
@@ -404,7 +404,7 @@ func TestRemoveIANAv6(t *testing.T) {
 		"fec0::/10",
 		"ff00::/8",
 	} {
-		inner = append(inner, mustParseIPRange(s))
+		inner = append(inner, mustFromString(s))
 	}
 
 	var want []iprange.IPRange
@@ -412,7 +412,7 @@ func TestRemoveIANAv6(t *testing.T) {
 		"6000::/3",
 		"fc00::/7",
 	} {
-		want = append(want, mustParseIPRange(s))
+		want = append(want, mustFromString(s))
 	}
 
 	rs := b.Remove(inner)
@@ -428,35 +428,35 @@ func TestPrefixes(t *testing.T) {
 		want []netip.Prefix
 	}{
 		{
-			in:   mustParseIPRange("::/0"),
+			in:   mustFromString("::/0"),
 			want: []netip.Prefix{mustParsePrefix("::/0")},
 		},
 		{
-			in:   mustParseIPRange("0.0.0.0/0"),
+			in:   mustFromString("0.0.0.0/0"),
 			want: []netip.Prefix{mustParsePrefix("0.0.0.0/0")},
 		},
 		{
-			in:   mustParseIPRange("::ffff:0.0.0.0/96"),
+			in:   mustFromString("::ffff:0.0.0.0/96"),
 			want: []netip.Prefix{mustParsePrefix("::ffff:0.0.0.0/96")},
 		},
 		{
-			in:   mustParseIPRange("2001:db8::/128"),
+			in:   mustFromString("2001:db8::/128"),
 			want: []netip.Prefix{mustParsePrefix("2001:db8::/128")},
 		},
 		{
-			in:   mustParseIPRange("::ffff:0.0.0.0/128"),
+			in:   mustFromString("::ffff:0.0.0.0/128"),
 			want: []netip.Prefix{mustParsePrefix("::ffff:0.0.0.0/128")},
 		},
 		{
-			in:   mustParseIPRange("0.0.0.0/32"),
+			in:   mustFromString("0.0.0.0/32"),
 			want: []netip.Prefix{mustParsePrefix("0.0.0.0/32")},
 		},
 		{
-			in:   mustParseIPRange("0.0.0.0-255.255.255.255"),
+			in:   mustFromString("0.0.0.0-255.255.255.255"),
 			want: []netip.Prefix{mustParsePrefix("0.0.0.0/0")},
 		},
 		{
-			in: mustParseIPRange("1.2.3.5-5.6.7.8"),
+			in: mustFromString("1.2.3.5-5.6.7.8"),
 			want: []netip.Prefix{
 				mustParsePrefix("1.2.3.5/32"),
 				mustParsePrefix("1.2.3.6/31"),
@@ -490,7 +490,7 @@ func TestPrefixes(t *testing.T) {
 			},
 		},
 		{
-			in: mustParseIPRange("0.0.0.0-255.255.255.254"),
+			in: mustFromString("0.0.0.0-255.255.255.254"),
 			want: []netip.Prefix{
 				mustParsePrefix("0.0.0.0/1"),
 				mustParsePrefix("128.0.0.0/2"),
@@ -527,11 +527,11 @@ func TestPrefixes(t *testing.T) {
 			},
 		},
 		{
-			in:   mustParseIPRange("::-ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"),
+			in:   mustFromString("::-ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"),
 			want: []netip.Prefix{mustParsePrefix("::/0")},
 		},
 		{
-			in: mustParseIPRange("::-ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe"),
+			in: mustFromString("::-ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe"),
 			want: []netip.Prefix{
 				mustParsePrefix("::/1"),
 				mustParsePrefix("8000::/2"),
@@ -686,14 +686,14 @@ func TestMarshalUnmarshalBinary(t *testing.T) {
 		iprange iprange.IPRange
 		wantLen int
 	}{
-		{mustParseIPRange("1.2.3.4"), 2 * 4},
-		{mustParseIPRange("1.2.3.4/24"), 2 * 4},
-		{mustParseIPRange("1.2.3.4-6.7.8.9"), 2 * 4},
-		{mustParseIPRange("::/0"), 2 * 16},
-		{mustParseIPRange("::"), 2 * 16},
-		{mustParseIPRange("fe80::ff05:834f:41ff:5de9/10"), 2 * 16},
-		{mustParseIPRange("::1-::ff"), 2 * 16},
-		{mustParseIPRange("::ffff:1.2.3.4/120"), 2 * 16},
+		{mustFromString("1.2.3.4"), 2 * 4},
+		{mustFromString("1.2.3.4/24"), 2 * 4},
+		{mustFromString("1.2.3.4-6.7.8.9"), 2 * 4},
+		{mustFromString("::/0"), 2 * 16},
+		{mustFromString("::"), 2 * 16},
+		{mustFromString("fe80::ff05:834f:41ff:5de9/10"), 2 * 16},
+		{mustFromString("::1-::ff"), 2 * 16},
+		{mustFromString("::ffff:1.2.3.4/120"), 2 * 16},
 		{iprange.IPRange{}, 0},
 	}
 
@@ -749,7 +749,7 @@ func TestMarshalUnmarshalBinary(t *testing.T) {
 
 	// ###
 	// only unmarshal into zero Range
-	r := mustParseIPRange("10.0.0.0/24")
+	r := mustFromString("10.0.0.0/24")
 	if err := r.UnmarshalBinary([]byte{1, 2, 3, 0, 1, 2, 3, 255}); err == nil {
 		t.Fatalf("%q decoded from byte slize into non zero range; want err, got %v", r, err)
 	}
@@ -760,14 +760,14 @@ func TestMarshalUnmarshalText(t *testing.T) {
 		r          iprange.IPRange
 		wantString string
 	}{
-		{mustParseIPRange("1.2.3.4"), "1.2.3.4/32"},
-		{mustParseIPRange("1.2.3.4/24"), "1.2.3.0/24"},
-		{mustParseIPRange("1.2.3.4-6.7.8.9"), "1.2.3.4-6.7.8.9"},
-		{mustParseIPRange("::/0"), "::/0"},
-		{mustParseIPRange("::"), "::/128"},
-		{mustParseIPRange("fe80::ff05:834f:41ff:5de9/10"), "fe80::/10"},
-		{mustParseIPRange("::-::ff"), "::/120"},
-		{mustParseIPRange("::ffff:1.2.3.4/112"), "::ffff:1.2.0.0/112"},
+		{mustFromString("1.2.3.4"), "1.2.3.4/32"},
+		{mustFromString("1.2.3.4/24"), "1.2.3.0/24"},
+		{mustFromString("1.2.3.4-6.7.8.9"), "1.2.3.4-6.7.8.9"},
+		{mustFromString("::/0"), "::/0"},
+		{mustFromString("::"), "::/128"},
+		{mustFromString("fe80::ff05:834f:41ff:5de9/10"), "fe80::/10"},
+		{mustFromString("::-::ff"), "::/120"},
+		{mustFromString("::ffff:1.2.3.4/112"), "::ffff:1.2.0.0/112"},
 		{iprange.IPRange{}, ""},
 	}
 
@@ -791,7 +791,7 @@ func TestMarshalUnmarshalText(t *testing.T) {
 
 	// ###
 	// only unmarshal into zero Range
-	r := mustParseIPRange("10.0.0.0/24")
+	r := mustFromString("10.0.0.0/24")
 	if err := r.UnmarshalText([]byte{1, 2, 3, 0, 1, 2, 3, 255}); err == nil {
 		t.Fatalf("%q decoded from byte slize into non zero range; want err, got %v", r, err)
 	}
@@ -804,18 +804,18 @@ func TestCompareLower(t *testing.T) {
 		want int
 	}{
 		{
-			r1:   mustParseIPRange("1.2.3.4-1.2.3.5"),
-			r2:   mustParseIPRange("1.2.3.4-1.2.3.5"),
+			r1:   mustFromString("1.2.3.4-1.2.3.5"),
+			r2:   mustFromString("1.2.3.4-1.2.3.5"),
 			want: 0,
 		},
 		{
-			r1:   mustParseIPRange("1.2.3.3-1.2.3.7"),
-			r2:   mustParseIPRange("1.2.3.4-1.2.3.8"),
+			r1:   mustFromString("1.2.3.3-1.2.3.7"),
+			r2:   mustFromString("1.2.3.4-1.2.3.8"),
 			want: -1,
 		},
 		{
-			r1:   mustParseIPRange("2001:db8::1"),
-			r2:   mustParseIPRange("fe80::/10"),
+			r1:   mustFromString("2001:db8::1"),
+			r2:   mustFromString("fe80::/10"),
 			want: -1,
 		},
 	}
@@ -840,18 +840,18 @@ func TestCompareUpper(t *testing.T) {
 		want int
 	}{
 		{
-			r1:   mustParseIPRange("1.2.3.4-1.2.3.5"),
-			r2:   mustParseIPRange("1.2.3.4-1.2.3.5"),
+			r1:   mustFromString("1.2.3.4-1.2.3.5"),
+			r2:   mustFromString("1.2.3.4-1.2.3.5"),
 			want: 0,
 		},
 		{
-			r1:   mustParseIPRange("1.2.3.3-1.2.3.7"),
-			r2:   mustParseIPRange("1.2.3.4-1.2.3.8"),
+			r1:   mustFromString("1.2.3.3-1.2.3.7"),
+			r2:   mustFromString("1.2.3.4-1.2.3.8"),
 			want: -1,
 		},
 		{
-			r1:   mustParseIPRange("2001:db8::1"),
-			r2:   mustParseIPRange("fe80::/10"),
+			r1:   mustFromString("2001:db8::1"),
+			r2:   mustFromString("fe80::/10"),
 			want: -1,
 		},
 	}

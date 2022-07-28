@@ -19,8 +19,8 @@ import "github.com/gaissmai/iprange"
 type IPRange struct{ ... }
 
   func FromString(s string) (IPRange, error)
-  func FromNetipAddrs(first, last netip.Addr) (IPRange, error)
-  func FromNetipPrefix(p netip.Prefix) (IPRange, error)
+  func FromAddrs(first, last netip.Addr) (IPRange, error)
+  func FromPrefix(p netip.Prefix) (IPRange, error)
 
   func (r IPRange) Addrs() (first, last netip.Addr)
   func (r IPRange) String() string

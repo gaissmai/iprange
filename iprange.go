@@ -68,7 +68,7 @@ func FromString(s string) (IPRange, error) {
 		if err != nil {
 			return zeroValue, err
 		}
-		return FromNetipPrefix(p)
+		return FromPrefix(p)
 	}
 
 	// addr-addr
@@ -108,8 +108,8 @@ func FromString(s string) (IPRange, error) {
 	return IPRange{addr, addr}, nil
 }
 
-// FromNetipPrefix returns an IPRange from the standard library's netip.Prefix type.
-func FromNetipPrefix(p netip.Prefix) (IPRange, error) {
+// FromPrefix returns an IPRange from the standard library's netip.Prefix type.
+func FromPrefix(p netip.Prefix) (IPRange, error) {
 	if !p.IsValid() {
 		return zeroValue, errors.New("netip.Prefix is invalid")
 	}
@@ -117,10 +117,10 @@ func FromNetipPrefix(p netip.Prefix) (IPRange, error) {
 	return IPRange{first, last}, nil
 }
 
-// FromNetipAddrs returns an IPRange from the provided IP addresses.
+// FromAddrs returns an IPRange from the provided IP addresses.
 //
 // IP addresses with zones are not allowed.
-func FromNetipAddrs(first, last netip.Addr) (IPRange, error) {
+func FromAddrs(first, last netip.Addr) (IPRange, error) {
 	if !((first.Is4() && last.Is4()) || (first.Is6() && last.Is6())) {
 		return zeroValue, errors.New("invalid or different IP versions")
 	}
@@ -187,7 +187,7 @@ func (r IPRange) String() string {
 
 // Merge adjacent and overlapping IPRanges.
 //
-// Remove dups and subsets and invalid ranges, returns the remaining IPRanges sorted.
+// Skip dups and subsets and invalid ranges, returns the remaining IPRanges sorted.
 func Merge(in []IPRange) (out []IPRange) {
 	if len(in) == 0 {
 		return nil
@@ -233,14 +233,6 @@ func Merge(in []IPRange) (out []IPRange) {
 	return
 }
 
-func (a IPRange) isDisjunct(b IPRange) bool {
-	return a.last.Less(b.first) || b.last.Less(a.first)
-}
-
-func (a IPRange) covers(b IPRange) bool {
-	return a.first.Compare(b.first) <= 0 && a.last.Compare(b.last) >= 0
-}
-
 // Remove the slice of IPRanges from receiver, returns the remaining IPRanges.
 func (r IPRange) Remove(in []IPRange) (out []IPRange) {
 	if r == zeroValue {
@@ -254,11 +246,11 @@ func (r IPRange) Remove(in []IPRange) (out []IPRange) {
 	if len(merged) == 0 {
 		return []IPRange{r}
 	}
-	// all remove ranges are disjunct with r
-	if r.last.Less(merged[0].first) {
+	// r is disjunct with all merged ranges
+	if r.isDisjunctLeft(merged[0]) {
 		return []IPRange{r}
 	}
-	if merged[len(merged)-1].last.Less(r.first) {
+	if r.isDisjunctRight(merged[len(merged)-1]) {
 		return []IPRange{r}
 	}
 
@@ -384,6 +376,22 @@ func (r *IPRange) UnmarshalBinary(data []byte) error {
 
 // ##################################################################
 // mothers little helpers
+
+func (a IPRange) isDisjunctLeft(b IPRange) bool {
+	return a.last.Less(b.first)
+}
+
+func (a IPRange) isDisjunctRight(b IPRange) bool {
+	return b.last.Less(a.first)
+}
+
+func (a IPRange) isDisjunct(b IPRange) bool {
+	return a.last.Less(b.first) || b.last.Less(a.first)
+}
+
+func (a IPRange) covers(b IPRange) bool {
+	return a.first.Compare(b.first) <= 0 && a.last.Compare(b.last) >= 0
+}
 
 // cmpRange, by first points, supersets to the left as tiebreaker
 func cmpRange(a, b IPRange) int {
