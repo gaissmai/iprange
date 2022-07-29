@@ -84,17 +84,7 @@ func FromString(s string) (IPRange, error) {
 			return zeroValue, err
 		}
 
-		if first.Zone() != "" || last.Zone() != "" {
-			return zeroValue, errors.New("ip address MUST NOT have a zone")
-		}
-
-		if first.Is4() && !last.Is4() || first.Is6() && !last.Is6() {
-			return zeroValue, errors.New("first and last address have different IP versions")
-		}
-		if last.Less(first) {
-			return zeroValue, errors.New("last address is less than first address")
-		}
-		return IPRange{first, last}, nil
+		return FromAddrs(first, last)
 	}
 
 	// an addr, or maybe just rubbish
@@ -102,10 +92,7 @@ func FromString(s string) (IPRange, error) {
 	if err != nil {
 		return zeroValue, err
 	}
-	if addr.Zone() != "" {
-		return zeroValue, errors.New("ip address MUST NOT have a zone")
-	}
-	return IPRange{addr, addr}, nil
+	return FromAddrs(addr, addr)
 }
 
 // FromPrefix returns an IPRange from the standard library's netip.Prefix type.
