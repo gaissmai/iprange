@@ -53,7 +53,7 @@ var (
 //	4.4.4.4
 //	::0
 //
-// IP addresses as input are converted to /32 or /128 ranges.
+// Single IP addresses as input are converted to /32 or /128 ranges.
 //
 // The hard part is done by netip.ParseAddr and netip.ParsePrefix from the stdlib.
 func FromString(s string) (IPRange, error) {
