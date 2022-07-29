@@ -185,35 +185,35 @@ func Merge(in []IPRange) (out []IPRange) {
 	copy(rs, in)
 	sortRanges(rs)
 
-	for _, this := range rs {
-		if this == zeroValue {
+	for _, r := range rs {
+		if r == zeroValue {
 			continue
 		}
 
 		// starting point
 		if out == nil {
-			out = append(out, this)
+			out = append(out, r)
 			continue
 		}
 
-		// take ptr to last result item
+		// take ptr to last out item
 		topic := &out[len(out)-1]
 
 		// compare topic with this range
 		// case order is VERY important!
 		switch {
-		case topic.last.Next() == this.first:
+		case topic.last.Next() == r.first:
 			// ranges are adjacent [f...l][f...l]
-			topic.last = this.last
-		case topic.last.Less(this.first):
-			// ranges are disjoint [f...l]....[f...l]
-			out = append(out, this)
-		case topic.last.Less(this.last):
+			topic.last = r.last
+		case topic.isDisjunctLeft(r):
+			// disjoint [f...l]  [f...l]
+			out = append(out, r)
+		case topic.last.Less(r.last):
 			// partial overlap [f......l]
 			//                       [f....l]
-			topic.last = this.last
+			topic.last = r.last
 		default:
-			// no-op: true covers or equal
+			// no-op: covers or equal
 		}
 	}
 
@@ -259,7 +259,7 @@ func (r IPRange) Remove(in []IPRange) (out []IPRange) {
 			// new r, (d.last, r.last]
 			r.first = m.last.Next()
 		default:
-			panic("logic error")
+			panic("unreachable")
 		}
 		// overflow from d.last.Next()
 		if !r.first.IsValid() {
