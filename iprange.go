@@ -233,7 +233,7 @@ func Merge(in []IPRange) (out []IPRange) {
 	return
 }
 
-// Remove the slice of IPRanges from receiver, returns the remaining IPRanges.
+// Remove the slice of IPRanges from r, returns the remaining IPRanges.
 func (r IPRange) Remove(in []IPRange) (out []IPRange) {
 	if r == zeroValue {
 		return nil
@@ -255,7 +255,7 @@ func (r IPRange) Remove(in []IPRange) (out []IPRange) {
 	}
 
 	for _, m := range merged {
-		// case order is important!
+		// case order is VERY important!
 		switch {
 		case m.isDisjunct(r):
 			// no-op
@@ -322,7 +322,7 @@ func (r IPRange) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
-// The IPRange is expected in a form accepted by Parse.
+// The IPRange is expected in a form accepted by FromString.
 //
 // If text is empty, UnmarshalText sets *r to the zero IPRange and
 // returns no error.
