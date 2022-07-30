@@ -151,7 +151,7 @@ func (r IPRange) Prefixes() []netip.Prefix {
 //
 // It appends to dst the netip.Prefix entries that covers r.
 func (r IPRange) PrefixesAppend(dst []netip.Prefix) []netip.Prefix {
-	return extnetip.AppendPrefixes(dst, r.first, r.last)
+	return extnetip.PrefixesAppend(dst, r.first, r.last)
 }
 
 // String returns the string form of the IPRange.
@@ -208,12 +208,15 @@ func Merge(in []IPRange) (out []IPRange) {
 		case topic.isDisjunctLeft(r):
 			// disjoint [f...l]  [f...l]
 			out = append(out, r)
+		case topic.covers(r):
+			// no-op
+			continue
 		case topic.last.Less(r.last):
 			// partial overlap [f......l]
-			//                       [f....l]
+			//                      [f....l]
 			topic.last = r.last
 		default:
-			// no-op: covers or equal
+			panic("unreachable")
 		}
 	}
 
@@ -254,18 +257,18 @@ func (r IPRange) Remove(in []IPRange) (out []IPRange) {
 			// left overlap, move cursor
 			r.first = m.last.Next()
 		case m.first.Compare(r.first) > 0:
-			// right overlap, save [r.first, d.first-1)
+			// right overlap, save [r.first, m.first-1)
 			out = append(out, IPRange{r.first, m.first.Prev()})
-			// new r, (d.last, r.last]
+			// new r first
 			r.first = m.last.Next()
 		default:
 			panic("unreachable")
 		}
-		// overflow from d.last.Next()
+		// test for overflow from last.Next()
 		if !r.first.IsValid() {
 			return out
 		}
-		// cursor moved behind r.last
+		// test if cursor moved behind r.last
 		if r.last.Less(r.first) {
 			return out
 		}
