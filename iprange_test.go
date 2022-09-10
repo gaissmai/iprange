@@ -30,6 +30,7 @@ var (
 )
 
 func TestFromAddrs(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		first netip.Addr
 		last  netip.Addr
@@ -100,6 +101,7 @@ func TestFromAddrs(t *testing.T) {
 }
 
 func TestFromStringInvalid(t *testing.T) {
+	t.Parallel()
 	tests := []string{
 		"::ffff:0.0.0.0-0.0.0.1",
 		"0.0.0.0-::ffff:0.0.0.1",
@@ -124,6 +126,7 @@ func TestFromStringInvalid(t *testing.T) {
 }
 
 func TestFromPrefix(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		pfx   netip.Prefix
 		first netip.Addr
@@ -177,6 +180,7 @@ func TestFromPrefix(t *testing.T) {
 }
 
 func TestMerge(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		in   []iprange.IPRange
 		want []iprange.IPRange
@@ -220,6 +224,7 @@ func TestMerge(t *testing.T) {
 }
 
 func TestMerge2(t *testing.T) {
+	t.Parallel()
 	rs := []iprange.IPRange{
 		mustFromString("0.0.0.0/0"),
 		mustFromString("10.0.0.15/32"),
@@ -269,6 +274,7 @@ func TestMerge2(t *testing.T) {
 }
 
 func TestRemoveCornerCases(t *testing.T) {
+	t.Parallel()
 	// nil
 	var r iprange.IPRange
 	rs := r.Remove(nil)
@@ -379,6 +385,7 @@ func TestRemoveCornerCases(t *testing.T) {
 }
 
 func TestRemoveIANAv6(t *testing.T) {
+	t.Parallel()
 	b, _ := iprange.FromString("::/0")
 
 	var inner []iprange.IPRange
@@ -423,6 +430,7 @@ func TestRemoveIANAv6(t *testing.T) {
 }
 
 func TestPrefixes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		in   iprange.IPRange
 		want []netip.Prefix
@@ -682,6 +690,7 @@ func TestPrefixes(t *testing.T) {
 }
 
 func TestMarshalUnmarshalBinary(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		iprange iprange.IPRange
 		wantLen int
@@ -756,6 +765,7 @@ func TestMarshalUnmarshalBinary(t *testing.T) {
 }
 
 func TestMarshalUnmarshalText(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		r          iprange.IPRange
 		wantString string
@@ -798,6 +808,7 @@ func TestMarshalUnmarshalText(t *testing.T) {
 }
 
 func TestCompareLower(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		r1   iprange.IPRange
 		r2   iprange.IPRange
@@ -834,6 +845,7 @@ func TestCompareLower(t *testing.T) {
 }
 
 func TestCompareUpper(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		r1   iprange.IPRange
 		r2   iprange.IPRange
