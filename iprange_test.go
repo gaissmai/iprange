@@ -807,76 +807,50 @@ func TestMarshalUnmarshalText(t *testing.T) {
 	}
 }
 
-func TestCompareLower(t *testing.T) {
+func TestCompare(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		r1   iprange.IPRange
-		r2   iprange.IPRange
-		want int
+		r1             iprange.IPRange
+		r2             iprange.IPRange
+		ll, rr, lr, rl int
 	}{
 		{
-			r1:   mustFromString("1.2.3.4-1.2.3.5"),
-			r2:   mustFromString("1.2.3.4-1.2.3.5"),
-			want: 0,
+			r1: mustFromString("1.2.3.4-1.2.3.5"),
+			r2: mustFromString("1.2.3.4-1.2.3.5"),
+			ll: 0, rr: 0, lr: -1, rl: +1,
 		},
 		{
-			r1:   mustFromString("1.2.3.3-1.2.3.7"),
-			r2:   mustFromString("1.2.3.4-1.2.3.8"),
-			want: -1,
+			r1: mustFromString("1.2.3.3-1.2.3.7"),
+			r2: mustFromString("1.2.3.4-1.2.3.8"),
+			ll: -1, rr: -1, lr: -1, rl: +1,
 		},
 		{
-			r1:   mustFromString("2001:db8::1"),
-			r2:   mustFromString("fe80::/10"),
-			want: -1,
+			r1: mustFromString("1.2.3.4-1.2.3.8"),
+			r2: mustFromString("1.2.3.3-1.2.3.7"),
+			ll: +1, rr: +1, lr: -1, rl: +1,
+		},
+		{
+			r1: mustFromString("2001:db8::1"),
+			r2: mustFromString("fe80::/10"),
+			ll: -1, rr: -1, lr: -1, rl: -1,
+		},
+		{
+			r1: mustFromString("fe80::/10"),
+			r2: mustFromString("2001:db8::1"),
+			ll: 1, rr: 1, lr: 1, rl: 1,
+		},
+		{
+			r1: mustFromString("::1"),
+			r2: mustFromString("::1"),
+			ll: 0, rr: 0, lr: 0, rl: 0,
 		},
 	}
 
 	for _, tt := range tests {
-		got := tt.r1.CompareLower(tt.r2)
-		if got != tt.want {
-			t.Fatalf("(%s).CompareLower(%s), want: %v, got: %v\n", tt.r1, tt.r2, tt.want, got)
-		}
-
-		got = tt.r2.CompareLower(tt.r1)
-		if -1*got != tt.want {
-			t.Fatalf("(%s).CompareLower(%s), want: %v, got: %v\n", tt.r2, tt.r1, tt.want, -1*got)
-		}
-	}
-}
-
-func TestCompareUpper(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		r1   iprange.IPRange
-		r2   iprange.IPRange
-		want int
-	}{
-		{
-			r1:   mustFromString("1.2.3.4-1.2.3.5"),
-			r2:   mustFromString("1.2.3.4-1.2.3.5"),
-			want: 0,
-		},
-		{
-			r1:   mustFromString("1.2.3.3-1.2.3.7"),
-			r2:   mustFromString("1.2.3.4-1.2.3.8"),
-			want: -1,
-		},
-		{
-			r1:   mustFromString("2001:db8::1"),
-			r2:   mustFromString("fe80::/10"),
-			want: -1,
-		},
-	}
-
-	for _, tt := range tests {
-		got := tt.r1.CompareUpper(tt.r2)
-		if got != tt.want {
-			t.Fatalf("(%s).CompareLower(%s), want: %v, got: %v\n", tt.r1, tt.r2, tt.want, got)
-		}
-
-		got = tt.r2.CompareUpper(tt.r1)
-		if -1*(got) != tt.want {
-			t.Fatalf("(%s).CompareLower(%s), want: %v, got: %v\n", tt.r2, tt.r1, tt.want, -1*got)
+		ll, rr, lr, rl := tt.r1.Compare(tt.r2)
+		if !(ll == tt.ll && rr == tt.rr && lr == tt.lr && rl == tt.rl) {
+			t.Fatalf("(%s).Compare(%s), want: (%v, %v, %v, %v), got: (%v, %v, %v, %v) \n",
+				tt.r1, tt.r2, tt.ll, tt.rr, tt.lr, tt.rl, ll, rr, lr, rl)
 		}
 	}
 }

@@ -34,9 +34,6 @@ type IPRange struct{ ... }
   func (r IPRange) Prefixes() []netip.Prefix
   func (r IPRange) PrefixesAppend(dst []netip.Prefix) []netip.Prefix
 
-  func (r IPRange) CompareLower(r2 IPRange) int
-  func (r IPRange) CompareUpper(r2 IPRange) int
-
   func (r IPRange) MarshalBinary() ([]byte, error)
   func (r IPRange) MarshalText() ([]byte, error)
 
