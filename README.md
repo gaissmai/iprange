@@ -39,9 +39,11 @@ type IPRange struct{ ... }
 
   func (r *IPRange) UnmarshalBinary(data []byte) error
   func (r *IPRange) UnmarshalText(text []byte) error
+
+  func Compare(a, b IPRange) (ll, rr, lr, rl int)
 ```
 
 ## Advanced features
-For more advanced functionality IPRange implements the `interval.Interface` for fast lookups.
+For fast lookups use the `Compare` function together with the [interval package] from the same author.
 
-see also: https://github.com/gaissmai/interval
+[interval package]: https://github.com/gaissmai/interval
