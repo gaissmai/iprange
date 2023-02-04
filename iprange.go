@@ -293,12 +293,16 @@ func Compare(a, b IPRange) (ll int, rr int, lr int, rl int) {
 	return
 }
 
-// CompareLower, DEPRECATED, see [Compare]
+// CompareLower
+//
+// Deprecated: see [Compare]
 func (r IPRange) CompareLower(r2 IPRange) int {
 	return r.first.Compare(r2.first)
 }
 
-// CompareUpper, DEPRECATED, see [Compare]
+// CompareUpper
+//
+// Deprecated: see [Compare]
 func (r IPRange) CompareUpper(r2 IPRange) int {
 	return r.last.Compare(r2.last)
 }
