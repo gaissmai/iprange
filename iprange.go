@@ -280,13 +280,11 @@ func (r IPRange) Remove(in []IPRange) (out []IPRange) {
 }
 
 // #########################################################################################
-// implement the interval.Interface
-
-// Compare implements the interval.Interface from the
+// Compare implements the cmp function from the
 // package https://github.com/gaissmai/interval for fast lookups.
 //
 // Returns four integers comparing the four points of the two IP ranges.
-func (a IPRange) Compare(b IPRange) (ll int, rr int, lr int, rl int) {
+func Compare(a, b IPRange) (ll int, rr int, lr int, rl int) {
 	// l=left  a.k.a first point from range a.k.a. interval
 	// r=right a.k.a last  point from range a.k.a. interval
 	ll = a.first.Compare(b.first)
@@ -296,12 +294,12 @@ func (a IPRange) Compare(b IPRange) (ll int, rr int, lr int, rl int) {
 	return
 }
 
-// CompareLower, DEPRECATED, see [IPRange.Compare]
+// CompareLower, DEPRECATED, see [Compare]
 func (r IPRange) CompareLower(r2 IPRange) int {
 	return r.first.Compare(r2.first)
 }
 
-// CompareUpper, DEPRECATED, see [IPRange.Compare]
+// CompareUpper, DEPRECATED, see [Compare]
 func (r IPRange) CompareUpper(r2 IPRange) int {
 	return r.last.Compare(r2.last)
 }

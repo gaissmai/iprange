@@ -847,9 +847,9 @@ func TestCompare(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		ll, rr, lr, rl := tt.r1.Compare(tt.r2)
+		ll, rr, lr, rl := iprange.Compare(tt.r1, tt.r2)
 		if !(ll == tt.ll && rr == tt.rr && lr == tt.lr && rl == tt.rl) {
-			t.Fatalf("(%s).Compare(%s), want: (%v, %v, %v, %v), got: (%v, %v, %v, %v) \n",
+			t.Fatalf("Compare(%s, %s), want: (%v, %v, %v, %v), got: (%v, %v, %v, %v) \n",
 				tt.r1, tt.r2, tt.ll, tt.rr, tt.lr, tt.rl, ll, rr, lr, rl)
 		}
 	}
