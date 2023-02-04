@@ -279,11 +279,10 @@ func (r IPRange) Remove(in []IPRange) (out []IPRange) {
 	return out
 }
 
-// #########################################################################################
-// Compare implements the cmp function from the
-// package https://github.com/gaissmai/interval for fast lookups.
+// Compare returns four integers comparing the four points of the two IP ranges.
+// Implements the cmp function in the [package interval] for fast lookups.
 //
-// Returns four integers comparing the four points of the two IP ranges.
+// [package interval]: https://github.com/gaissmai/interval
 func Compare(a, b IPRange) (ll int, rr int, lr int, rl int) {
 	// l=left  a.k.a first point from range a.k.a. interval
 	// r=right a.k.a last  point from range a.k.a. interval
