@@ -108,6 +108,7 @@ func FromPrefix(p netip.Prefix) (IPRange, error) {
 //
 // IP addresses with zones are not allowed.
 func FromAddrs(first, last netip.Addr) (IPRange, error) {
+	//nolint:staticcheck // De Morgan conversion reduces readability here
 	if !((first.Is4() && last.Is4()) || (first.Is6() && last.Is6())) {
 		return zeroValue, errors.New("invalid or different IP versions")
 	}
