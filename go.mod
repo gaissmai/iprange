@@ -1,5 +1,5 @@
 module github.com/gaissmai/iprange
 
-go 1.18
+go 1.25
 
-require github.com/gaissmai/extnetip v1.0.0
+require github.com/gaissmai/extnetip v1.3.2
