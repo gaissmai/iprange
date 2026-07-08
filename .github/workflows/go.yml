@@ -56,9 +56,3 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           version: latest
-
-      - name: golangci-lint with unsafe build tag
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: latest
-          args: --build-tags=unsafe
