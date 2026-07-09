@@ -14,12 +14,13 @@ very often you have to deal with ranges not representable as a prefix. This libr
 
 ## ATTENTION: API change
 
-`Prefixes` now returns an interator and `PrefixesAppend` is removed.
+`Prefixes` now returns an iterator and `PrefixesAppend` is removed.
+Also `CompareLower` and `CompareUpper` are removed, use `Compare` instead.
 
 ## API
 
 ```go
-package iprange // import "."
+package iprange // import "github.com/gaissmai/iprange"
 
 type IPRange struct {
 	// Has unexported fields.
