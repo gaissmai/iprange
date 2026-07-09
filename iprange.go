@@ -10,6 +10,7 @@ package iprange
 import (
 	"errors"
 	"fmt"
+	"iter"
 	"net/netip"
 	"sort"
 	"strings"
@@ -27,7 +28,7 @@ import (
 // Not all IP address ranges in the wild are CIDRs, very often you have to deal
 // with ranges not representable as a prefix.
 //
-// This library handels IP ranges and CIDRs transparently.
+// This library handles IP ranges and CIDRs transparently.
 type IPRange struct {
 	first netip.Addr
 	last  netip.Addr
@@ -154,6 +155,12 @@ func (r IPRange) String() string {
 
 // #########################################################################################
 // more complex functions
+
+// Prefixes returns an iterator over all netip.Prefix values
+// that cover the range r.
+func (r IPRange) Prefixes() iter.Seq[netip.Prefix] {
+	return extnetip.All(r.Addrs())
+}
 
 // Merge adjacent and overlapping IPRanges.
 //
