@@ -2,7 +2,6 @@ package iprange_test
 
 import (
 	"net/netip"
-	"reflect"
 	"slices"
 	"testing"
 
@@ -286,7 +285,7 @@ func TestMerge(t *testing.T) {
 
 	for _, tt := range tests {
 		rs := iprange.Merge(tt.in)
-		if !reflect.DeepEqual(tt.want, rs) {
+		if !slices.Equal(tt.want, rs) {
 			t.Fatalf("Merge(%v): want: %v, got: %v", tt.in, tt.want, rs)
 		}
 	}
@@ -323,7 +322,7 @@ func TestMerge2(t *testing.T) {
 		mustFromString("::/0"),
 	}
 
-	if !reflect.DeepEqual(got, want) {
+	if !slices.Equal(got, want) {
 		t.Errorf("Merge():\ngot:  %v\nwant: %v", got, want)
 	}
 
@@ -337,7 +336,7 @@ func TestMerge2(t *testing.T) {
 	want = []iprange.IPRange{mustFromString("0.0.0.0/8")}
 	got = iprange.Merge(rs)
 
-	if !reflect.DeepEqual(got, want) {
+	if !slices.Equal(got, want) {
 		t.Errorf("Merge():\ngot:  %v\nwant: %v", got, want)
 	}
 }
@@ -393,7 +392,7 @@ func TestRemoveCornerCases(t *testing.T) {
 	r = mustFromString("0.0.0.0/0")
 	rs = r.Remove([]iprange.IPRange{mustFromString("0.0.0.0/1"), mustFromString("::/0")})
 	wantRs := []iprange.IPRange{mustFromString("128.0.0.0/1")}
-	if !reflect.DeepEqual(rs, wantRs) {
+	if !slices.Equal(rs, wantRs) {
 		t.Errorf("Remove(...), got %v, want %v", rs, wantRs)
 	}
 
@@ -493,7 +492,7 @@ func TestRemoveIANAv6(t *testing.T) {
 
 	rs := b.Remove(inner)
 
-	if !reflect.DeepEqual(rs, want) {
+	if !slices.Equal(rs, want) {
 		t.Errorf("Remove for IANAv6 blocks, got %v, want %v", rs, want)
 	}
 }
