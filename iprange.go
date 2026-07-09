@@ -137,23 +137,6 @@ func (r IPRange) Prefix() (prefix netip.Prefix, ok bool) {
 	return extnetip.Prefix(r.first, r.last)
 }
 
-// Prefixes returns the slice of netip.Prefix entries that covers r.
-//
-// If r is invalid Prefixes returns nil.
-//
-// Prefixes necessarily allocates. See PrefixesAppend for a version that
-// uses memory you provide.
-func (r IPRange) Prefixes() []netip.Prefix {
-	return extnetip.Prefixes(r.first, r.last)
-}
-
-// PrefixesAppend is the append version of Prefixes.
-//
-// It appends to dst the netip.Prefix entries that covers r.
-func (r IPRange) PrefixesAppend(dst []netip.Prefix) []netip.Prefix {
-	return extnetip.PrefixesAppend(dst, r.first, r.last)
-}
-
 // String returns the string form of the IPRange.
 //
 //	"127.0.0.1-127.0.0.19"
