@@ -239,6 +239,7 @@ func TestPrefixes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := slices.Collect(tt.in.Prefixes())
 			if !slices.Equal(got, tt.want) {
 				t.Errorf("Prefixes() for %q\n got:  %v\n want: %v", tt.in, got, tt.want)
