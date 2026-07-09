@@ -62,8 +62,7 @@ func FromString(s string) (IPRange, error) {
 	}
 
 	// addr/bits
-	i := strings.IndexByte(s, '/')
-	if i >= 0 {
+	if strings.Contains(s, "/") {
 		p, err := netip.ParsePrefix(s)
 		if err != nil {
 			return zeroValue, err
@@ -369,8 +368,8 @@ func (r *IPRange) UnmarshalBinary(data []byte) error {
 		return errors.New("last address is less than first address")
 	}
 
-	(*r).first = first
-	(*r).last = last
+	r.first = first
+	r.last = last
 	return nil
 }
 

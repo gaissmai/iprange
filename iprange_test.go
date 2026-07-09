@@ -728,7 +728,7 @@ func TestMarshalUnmarshalBinary(t *testing.T) {
 	// test slize size
 	var buf [100]byte
 
-	for i := 0; i < len(buf); i++ {
+	for i := range buf {
 		// base,last: IPv4: 2x4=8 bytes, IPv6: 2x16=32 bytes
 		if i == 0 || i == 8 || i == 32 {
 			continue
@@ -746,7 +746,7 @@ func TestMarshalUnmarshalBinary(t *testing.T) {
 	// last is less than base
 	badBinary := [][]byte{
 		{3: 1, 7: 0},   // 0.0.0.1-0.0.0.0
-		{15: 1, 31: 0}, //::1-::
+		{15: 1, 31: 0}, // ::1-::
 	}
 
 	for _, data := range badBinary {
