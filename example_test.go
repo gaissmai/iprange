@@ -48,6 +48,36 @@ func ExampleIPRange_Addrs() {
 	// last:   febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff
 }
 
+func ExampleIPRange_Prefixes() {
+	r, _ := iprange.FromString("10.0.0.6-10.0.0.99")
+	fmt.Printf("%s -> Prefixes:\n", r)
+	for p := range r.Prefixes() {
+		fmt.Println(p)
+	}
+
+	fmt.Println()
+
+	r, _ = iprange.FromString("2001:db8::affe-2001:db8::ffff")
+	fmt.Printf("%s -> Prefixes:\n", r)
+	for p := range r.Prefixes() {
+		fmt.Println(p)
+	}
+
+	// Output:
+	// 10.0.0.6-10.0.0.99 -> Prefixes:
+	// 10.0.0.6/31
+	// 10.0.0.8/29
+	// 10.0.0.16/28
+	// 10.0.0.32/27
+	// 10.0.0.64/27
+	// 10.0.0.96/30
+	//
+	// 2001:db8::affe-2001:db8::ffff -> Prefixes:
+	// 2001:db8::affe/127
+	// 2001:db8::b000/116
+	// 2001:db8::c000/114
+}
+
 func ExampleMerge() {
 	var rs []iprange.IPRange
 	for _, s := range []string{

@@ -3,6 +3,7 @@ package iprange_test
 import (
 	"net/netip"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/gaissmai/iprange"
@@ -176,6 +177,74 @@ func TestFromPrefix(t *testing.T) {
 	r, err := iprange.FromPrefix(netip.Prefix{})
 	if r.IsValid() || err == nil {
 		t.Fatalf("FomPrefix() of invalid prefix, want: inavlid range and error, got: (%v, %v)", r, err)
+	}
+}
+
+func TestPrefixes(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		in   iprange.IPRange
+		want []netip.Prefix
+	}{
+		{
+			name: "zero value returns nil",
+			in:   iprange.IPRange{},
+			want: nil,
+		},
+		{
+			name: "single IPv4 host",
+			in:   mustFromString("10.0.0.1"),
+			want: []netip.Prefix{mustParsePrefix("10.0.0.1/32")},
+		},
+		{
+			name: "single IPv6 host",
+			in:   mustFromString("2001:db8::1"),
+			want: []netip.Prefix{mustParsePrefix("2001:db8::1/128")},
+		},
+		{
+			name: "two adjacent IPv4 addresses spanning a /31",
+			in:   mustFromString("10.0.0.0-10.0.0.1"),
+			want: []netip.Prefix{mustParsePrefix("10.0.0.0/31")},
+		},
+		{
+			name: "non-aligned 3-address IPv4 range splits into two prefixes",
+			in:   mustFromString("10.0.0.1-10.0.0.3"),
+			want: []netip.Prefix{
+				mustParsePrefix("10.0.0.1/32"),
+				mustParsePrefix("10.0.0.2/31"),
+			},
+		},
+		{
+			name: "IPv4 range crossing /24 boundary",
+			in:   mustFromString("10.0.0.128-10.0.1.127"),
+			want: []netip.Prefix{
+				mustParsePrefix("10.0.0.128/25"),
+				mustParsePrefix("10.0.1.0/25"),
+			},
+		},
+		{
+			name: "small IPv6 non-CIDR range",
+			in:   mustFromString("2001:db8::1-2001:db8::3"),
+			want: []netip.Prefix{
+				mustParsePrefix("2001:db8::1/128"),
+				mustParsePrefix("2001:db8::2/127"),
+			},
+		},
+		{
+			name: "IPv6 range aligned to /48",
+			in:   mustFromString("2001:db8::/48"),
+			want: []netip.Prefix{mustParsePrefix("2001:db8::/48")},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := slices.Collect(tt.in.Prefixes())
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("Prefixes() for %q\n got:  %v\n want: %v", tt.in, got, tt.want)
+			}
+		})
 	}
 }
 
