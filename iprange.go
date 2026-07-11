@@ -283,8 +283,8 @@ func (r IPRange) MarshalText() ([]byte, error) {
 
 // UnmarshalText implements encoding.TextUnmarshaler.
 // It parses the text representation using FromString.
-// If text is empty, it leaves the receiver as the zero value.
 // It returns an error if the receiver is nil or is not the zero value.
+// If text is empty, it leaves the receiver as the zero value.
 func (r *IPRange) UnmarshalText(text []byte) error {
 	if r == nil {
 		return errors.New("UnmarshalText on nil receiver")
