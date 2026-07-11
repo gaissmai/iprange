@@ -1,10 +1,10 @@
 // Package iprange is an extension to net/netip.
 //
-// An additional type IPRange is defined and the most useful methods for it.
+// It defines the IPRange type, representing inclusive IP address ranges,
+// and provides utility methods for manipulation, comparison, and merging.
 //
-// For more advanced functionality IPRange implements the interval.Interface for fast lookups.
-//
-// see also: https://github.com/gaissmai/interval
+// For advanced lookup functionality, IPRange is designed to integrate
+// with the interval tree package at https://github.com/gaissmai/interval.
 package iprange
 
 import (
@@ -20,15 +20,14 @@ import (
 
 // IPRange represents an inclusive range of IP addresses from the same address family.
 //
-//	10.0.0.3-10.0.17.134        // range
-//	2001:db8::1-2001:db8::f6    // range
-//	192.168.0.1/24              // Prefix aka CIDR
-//	::1/128                     // Prefix aka CIDR
+// Examples of valid ranges:
 //
-// Not all IP address ranges in the wild are CIDRs, very often you have to deal
-// with ranges not representable as a prefix.
+//	10.0.0.3-10.0.17.134        // Arbitrary range
+//	2001:db8::1-2001:db8::f6    // IPv6 range
+//	192.168.0.1/24              // CIDR prefix
+//	::1/128                     // Host prefix
 //
-// This library handles IP ranges and CIDRs transparently.
+// Unlike standard CIDR prefixes, IPRange handles arbitrary IP bounds transparently.
 type IPRange struct {
 	first netip.Addr
 	last  netip.Addr
@@ -36,30 +35,19 @@ type IPRange struct {
 
 var zeroValue IPRange
 
-// FromString parses the input string and returns an IPRange.
+// FromString parses the input string s and returns an IPRange.
+// It returns an error if the input format is invalid.
 //
-// Returns an error on invalid input.
-//
-// Valid strings are of the form:
-//
-//	192.168.2.3-192.168.7.255
-//	2001:db8::1-2001:db8::ff00:35
-//
-//	2001:db8:dead::/38
-//	10.0.0.0/8
-//
-//	4.4.4.4
-//	::0
-//
-// Single IP addresses as input are converted to /32 or /128 ranges.
-//
-// The hard part is done by netip.ParseAddr and netip.ParsePrefix from the stdlib.
+// Valid input formats:
+//   - CIDR Prefix: "192.168.0.0/24", "2001:db8::/32"
+//   - Explicit Range: "192.168.2.3-192.168.7.255"
+//   - Single IP address: "4.4.4.4", "::0" (converted to /32 or /128 single-host ranges)
 func FromString(s string) (IPRange, error) {
 	if s == "" {
 		return zeroValue, errors.New("empty string")
 	}
 
-	// addr/bits
+	// Parse as a CIDR prefix if a slash is present.
 	if strings.Contains(s, "/") {
 		p, err := netip.ParsePrefix(s)
 		if err != nil {
@@ -68,7 +56,7 @@ func FromString(s string) (IPRange, error) {
 		return FromPrefix(p)
 	}
 
-	// addr-addr
+	// Parse as a hyphen-separated explicit address range.
 	ip, ip2, found := strings.Cut(s, "-")
 	if found {
 		first, err := netip.ParseAddr(ip)
@@ -84,7 +72,7 @@ func FromString(s string) (IPRange, error) {
 		return FromAddrs(first, last)
 	}
 
-	// an addr, or maybe just rubbish
+	// Parse as a single IP address.
 	addr, err := netip.ParseAddr(s)
 	if err != nil {
 		return zeroValue, err
@@ -92,7 +80,8 @@ func FromString(s string) (IPRange, error) {
 	return FromAddrs(addr, addr)
 }
 
-// FromPrefix returns an IPRange from the standard library's netip.Prefix type.
+// FromPrefix returns an IPRange representation of the provided netip.Prefix.
+// It returns an error if the prefix is invalid.
 func FromPrefix(p netip.Prefix) (IPRange, error) {
 	if !p.IsValid() {
 		return zeroValue, errors.New("netip.Prefix is invalid")
@@ -101,9 +90,10 @@ func FromPrefix(p netip.Prefix) (IPRange, error) {
 	return IPRange{first, last}, nil
 }
 
-// FromAddrs returns an IPRange from the provided IP addresses.
-//
-// IP addresses with zones are not allowed.
+// FromAddrs returns an IPRange from the provided first and last IP addresses.
+// Both addresses must be of the same family (both IPv4 or both IPv6),
+// must not contain zones, and last must not be less than first.
+// Otherwise, it returns an error.
 func FromAddrs(first, last netip.Addr) (IPRange, error) {
 	//nolint:staticcheck // De Morgan conversion reduces readability here
 	if !((first.Is4() && last.Is4()) || (first.Is6() && last.Is6())) {
@@ -119,26 +109,26 @@ func FromAddrs(first, last netip.Addr) (IPRange, error) {
 	return IPRange{first, last}, nil
 }
 
-// IsValid reports whether r is a valid IPRange.
+// IsValid reports whether r is a valid, initialized IPRange.
 func (r IPRange) IsValid() bool {
 	return r != zeroValue
 }
 
-// Addrs returns the first and last IP address of the IPRange.
+// Addrs returns the inclusive boundary IP addresses (first and last) of the IPRange.
 func (r IPRange) Addrs() (first, last netip.Addr) {
 	return r.first, r.last
 }
 
-// Prefix returns r as a netip.Prefix, if it can be presented exactly as such.
-// If r is not valid or is not exactly equal to one prefix, ok is false.
+// Prefix returns r as a netip.Prefix if it can be represented exactly as a single CIDR block.
+// If r is invalid or cannot be represented by a single prefix, it returns a zero netip.Prefix and false.
 func (r IPRange) Prefix() (prefix netip.Prefix, ok bool) {
 	return extnetip.Prefix(r.first, r.last)
 }
 
-// String returns the string form of the IPRange.
-//
-//	"127.0.0.1-127.0.0.19"
-//	"2001:db8::/32"
+// String returns the string representation of the IPRange.
+// If the range aligns perfectly with a single CIDR prefix, it returns its CIDR notation.
+// Otherwise, it returns the range formatted as "first-last".
+// If the range is invalid, it returns "invalid IPRange".
 func (r IPRange) String() string {
 	if r == zeroValue {
 		return "invalid IPRange"
@@ -152,24 +142,21 @@ func (r IPRange) String() string {
 	return pfx.String()
 }
 
-// #########################################################################################
-// more complex functions
-
-// Prefixes returns an iterator over all netip.Prefix values
-// that cover the range r.
+// Prefixes returns a standard iterator yielding the minimal set of netip.Prefix values
+// that fully cover the IPRange r.
 func (r IPRange) Prefixes() iter.Seq[netip.Prefix] {
 	return extnetip.All(r.Addrs())
 }
 
-// Merge adjacent and overlapping IPRanges.
-//
-// Skip dups and subsets and invalid ranges, returns the remaining IPRanges sorted.
+// Merge combines adjacent and overlapping IPRanges in the input slice.
+// It filters out duplicates, subsets, and invalid ranges, returning a new
+// slice of merged, non-overlapping IPRanges sorted in ascending order.
 func Merge(in []IPRange) (out []IPRange) {
 	if len(in) == 0 {
 		return nil
 	}
 
-	// copy and sort
+	// Copy the input slice to avoid mutating it, and sort the ranges.
 	rs := make([]IPRange, len(in))
 	copy(rs, in)
 	sortRanges(rs)
@@ -179,30 +166,27 @@ func Merge(in []IPRange) (out []IPRange) {
 			continue
 		}
 
-		// starting point
+		// Initialize the output slice with the first valid range.
 		if out == nil {
 			out = append(out, r)
 			continue
 		}
 
-		// take ptr to last out item
+		// Compare the last merged range in the output with the current range.
 		topic := &out[len(out)-1]
 
-		// compare topic with this range
-		// case order is VERY important!
 		switch {
 		case topic.last.Next() == r.first:
-			// ranges are adjacent [f...l][f...l]
+			// Ranges are adjacent (e.g., [1.1.1.1-1.1.1.2] and [1.1.1.3-1.1.1.4]).
 			topic.last = r.last
 		case topic.isDisjunctLeft(r):
-			// disjoint [f...l]  [f...l]
+			// Ranges are disjoint (e.g., [1.1.1.1-1.1.1.2] and [1.1.1.4-1.1.1.5]).
 			out = append(out, r)
 		case topic.covers(r):
-			// no-op
+			// Current range is a subset of the last merged range (no-op).
 			continue
 		case topic.last.Less(r.last):
-			// partial overlap [f......l]
-			//                      [f....l]
+			// Ranges partially overlap; extend the last merged range's upper bound.
 			topic.last = r.last
 		default:
 			panic("unreachable")
@@ -212,20 +196,21 @@ func Merge(in []IPRange) (out []IPRange) {
 	return
 }
 
-// Remove the slice of IPRanges from r, returns the remaining IPRanges.
+// Remove subtracts the slice of exclusion ranges in from the IPRange r.
+// It returns the remaining segments of r as a slice of non-overlapping
+// IPRanges sorted in ascending order.
 func (r IPRange) Remove(in []IPRange) (out []IPRange) {
 	if r == zeroValue {
 		return nil
 	}
 
-	// copy, sort, merge
+	// Merge the exclusion slice to get clean, sorted, non-overlapping segments.
 	merged := Merge(in)
 
-	// fast exit?
+	// Quick exit checks if there are no exclusions or no overlap.
 	if len(merged) == 0 {
 		return []IPRange{r}
 	}
-	// r is disjunct with all merged ranges
 	if r.isDisjunctLeft(merged[0]) {
 		return []IPRange{r}
 	}
@@ -234,47 +219,51 @@ func (r IPRange) Remove(in []IPRange) (out []IPRange) {
 	}
 
 	for _, m := range merged {
-		// case order is VERY important!
 		switch {
 		case m.isDisjunct(r):
-			// no-op
+			// No overlap with the current exclusion segment; continue.
 			continue
 		case m.covers(r):
-			// m covers r, m masks the rest
+			// The exclusion fully covers the remaining range; nothing is left.
 			return out
 		case m.first.Compare(r.first) <= 0:
-			// left overlap, move cursor
+			// Exclusion overlaps on the left; advance r's lower bound past the exclusion.
 			r.first = m.last.Next()
 		case m.first.Compare(r.first) > 0:
-			// right overlap, save [r.first, m.first-1)
+			// Exclusion overlaps on the right; output the segment before the exclusion starts,
+			// then advance r's lower bound past the exclusion.
 			out = append(out, IPRange{r.first, m.first.Prev()})
-			// new r first
 			r.first = m.last.Next()
 		default:
 			panic("unreachable")
 		}
-		// test for overflow from last.Next()
+
+		// Prevent infinite loops or invalid states when r's lower bound overflows.
 		if !r.first.IsValid() {
 			return out
 		}
-		// test if cursor moved behind r.last
+		// Terminate early if the advanced lower bound surpasses the upper bound.
 		if r.last.Less(r.first) {
 			return out
 		}
 	}
-	// save the rest
+
+	// Append any remaining portion of the range.
 	out = append(out, r)
 
 	return out
 }
 
-// Compare returns four integers comparing the four points of the two IP ranges.
-// Implements the cmp function in the [package interval] for fast lookups.
+// Compare returns four integers comparing the boundary endpoints of two IP ranges.
+// It implements the comparison function required by the interval tree package
+// at https://github.com/gaissmai/interval.
 //
-// [package interval]: https://github.com/gaissmai/interval
+// The return values represent the comparisons:
+//   - ll: a.first vs b.first
+//   - rr: a.last  vs b.last
+//   - lr: a.first vs b.last
+//   - rl: a.last  vs b.first
 func Compare(a, b IPRange) (ll int, rr int, lr int, rl int) {
-	// l=left  a.k.a first point from range a.k.a. interval
-	// r=right a.k.a last  point from range a.k.a. interval
 	ll = a.first.Compare(b.first)
 	rr = a.last.Compare(b.last)
 	lr = a.first.Compare(b.last)
@@ -282,12 +271,9 @@ func Compare(a, b IPRange) (ll int, rr int, lr int, rl int) {
 	return
 }
 
-// #####################################################################################
-// MARSHALING
-
-// MarshalText implements the encoding.TextMarshaler interface,
-// The encoding is the same as returned by String, with one exception:
-// If r is the zero IPRange, the encoding is the nil slice.
+// MarshalText implements encoding.TextMarshaler.
+// It returns the text representation of the range using String().
+// If the range is invalid or uninitialized, it returns nil.
 func (r IPRange) MarshalText() ([]byte, error) {
 	if !r.IsValid() {
 		return nil, nil
@@ -295,11 +281,10 @@ func (r IPRange) MarshalText() ([]byte, error) {
 	return []byte(r.String()), nil
 }
 
-// UnmarshalText implements the encoding.TextUnmarshaler interface.
-// The IPRange is expected in a form accepted by FromString.
-//
-// If text is empty, UnmarshalText sets *r to the zero IPRange and
-// returns no error.
+// UnmarshalText implements encoding.TextUnmarshaler.
+// It parses the text representation using FromString.
+// If text is empty, it clears the receiver to the zero IPRange.
+// It returns an error if the receiver is nil or is not the zero value.
 func (r *IPRange) UnmarshalText(text []byte) error {
 	if r == nil {
 		return errors.New("UnmarshalText on nil receiver")
@@ -309,7 +294,6 @@ func (r *IPRange) UnmarshalText(text []byte) error {
 		return errors.New("refusing to Unmarshal into non-zero IPRange")
 	}
 
-	// do nothing
 	if len(text) == 0 {
 		return nil
 	}
@@ -323,7 +307,9 @@ func (r *IPRange) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// MarshalBinary implements the encoding.BinaryMarshaler interface.
+// MarshalBinary implements encoding.BinaryMarshaler.
+// It encodes the boundary addresses consecutively as raw bytes.
+// (8 bytes for IPv4, 32 bytes for IPv6). It returns nil if the range is invalid.
 func (r IPRange) MarshalBinary() ([]byte, error) {
 	if !r.IsValid() {
 		return nil, nil
@@ -341,8 +327,10 @@ func (r IPRange) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
-// It expects data in the form generated by MarshalBinary.
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+// It reconstructs the IPRange from bytes generated by MarshalBinary.
+// It returns an error if the receiver is nil, not a zero value,
+// or if the byte slice length is not 8 or 32.
 func (r *IPRange) UnmarshalBinary(data []byte) error {
 	if r == nil {
 		return errors.New("UnmarshalBinary on nil receiver")
@@ -357,7 +345,7 @@ func (r *IPRange) UnmarshalBinary(data []byte) error {
 		return nil
 	}
 
-	// first,last: IPv4: 2x4=8 bytes, IPv6: 2x16=32 bytes
+	// Must be exactly 8 bytes (two 4-byte IPv4 addresses) or 32 bytes (two 16-byte IPv6 addresses).
 	if n != 8 && n != 32 {
 		return errors.New("unexpected slice size")
 	}
@@ -373,8 +361,7 @@ func (r *IPRange) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
-// ##################################################################
-// mothers little helpers
+// Helper methods
 
 func (a IPRange) isDisjunctLeft(b IPRange) bool {
 	return a.last.Less(b.first)
@@ -392,23 +379,21 @@ func (a IPRange) covers(b IPRange) bool {
 	return a.first.Compare(b.first) <= 0 && a.last.Compare(b.last) >= 0
 }
 
-// cmpRange, by first points, supersets to the left as tiebreaker
+// cmpRange compares two IPRanges. It orders them ascending by their first address.
+// If the first addresses are equal, it orders the larger range (the superset) first.
 func cmpRange(a, b IPRange) int {
 	if a == b {
 		return 0
 	}
 
-	// cmp first
 	if cmp := a.first.Compare(b.first); cmp != 0 {
 		return cmp
 	}
 
-	// first is equal, sort supersets to the left
 	return -(a.last.Compare(b.last))
 }
 
-// sortRanges in place in default sort order,
-// first points ascending, supersets to the left.
+// sortRanges sorts the slice of IPRanges in-place in ascending order.
 func sortRanges(rs []IPRange) {
 	sort.Slice(rs, func(i, j int) bool { return cmpRange(rs[i], rs[j]) < 0 })
 }

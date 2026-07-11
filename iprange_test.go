@@ -500,120 +500,247 @@ func TestRemoveIANAv6(t *testing.T) {
 
 func TestMarshalUnmarshalBinary(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		iprange iprange.IPRange
-		wantLen int
-	}{
-		{mustFromString("1.2.3.4"), 2 * 4},
-		{mustFromString("1.2.3.4/24"), 2 * 4},
-		{mustFromString("1.2.3.4-6.7.8.9"), 2 * 4},
-		{mustFromString("::/0"), 2 * 16},
-		{mustFromString("::"), 2 * 16},
-		{mustFromString("fe80::ff05:834f:41ff:5de9/10"), 2 * 16},
-		{mustFromString("::1-::ff"), 2 * 16},
-		{mustFromString("::ffff:1.2.3.4/120"), 2 * 16},
-		{iprange.IPRange{}, 0},
-	}
 
-	for _, tt := range tests {
-		r := tt.iprange
-		b, err := r.MarshalBinary()
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(b) != tt.wantLen {
-			t.Fatalf("%q encoded to size %d; want %d", tt.iprange, len(b), tt.wantLen)
-		}
-		var r2 iprange.IPRange
-		if err := r2.UnmarshalBinary(b); err != nil {
-			t.Fatal(err)
-		}
-		if r != r2 {
-			t.Fatalf("got %v; want %v", r2, r)
-		}
-	}
-
-	// ###
-	// test slize size
-	var buf [100]byte
-
-	for i := range buf {
-		// base,last: IPv4: 2x4=8 bytes, IPv6: 2x16=32 bytes
-		if i == 0 || i == 8 || i == 32 {
-			continue
+	t.Run("ValidRoundtrips", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name  string
+			input iprange.IPRange
+		}{
+			{"ZeroValue", iprange.IPRange{}},
+			{"IPv4SingleIP", mustFromString("1.2.3.4")},
+			{"IPv4Prefix", mustFromString("1.2.3.0/24")},
+			{"IPv4Range", mustFromString("1.2.3.4-6.7.8.9")},
+			{"IPv6Zero", mustFromString("::/0")},
+			{"IPv6Local", mustFromString("::1")},
+			{"IPv6Prefix", mustFromString("fe80::/10")},
+			{"IPv6Range", mustFromString("::1-::ff")},
 		}
 
-		b := buf[:i]
-		var r iprange.IPRange
-		err := r.UnmarshalBinary(b)
-		if err == nil {
-			t.Fatalf("%q decoded from byte slize, len %d; want err, got %v", r, len(b), err)
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				data, err := tt.input.MarshalBinary()
+				if err != nil {
+					t.Fatalf("MarshalBinary failed: %v", err)
+				}
+
+				var decoded iprange.IPRange
+				if err := decoded.UnmarshalBinary(data); err != nil {
+					t.Fatalf("UnmarshalBinary failed: %v", err)
+				}
+
+				if decoded != tt.input {
+					t.Errorf("decoded range does not match: got %v, want %v", decoded, tt.input)
+				}
+			})
 		}
-	}
+	})
 
-	// ###
-	// last is less than base
-	badBinary := [][]byte{
-		{3: 1, 7: 0},   // 0.0.0.1-0.0.0.0
-		{15: 1, 31: 0}, // ::1-::
-	}
-
-	for _, data := range badBinary {
-		r := iprange.IPRange{}
-		if err := r.UnmarshalBinary(data); err == nil {
-			t.Fatalf("%q decoded from byte slize %v; want err, got %v", r, data, err)
+	t.Run("ExpectedBinaryLength", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			input      iprange.IPRange
+			wantLength int
+		}{
+			{"ZeroValue", iprange.IPRange{}, 0},
+			{"IPv4Range", mustFromString("1.2.3.4-1.2.3.10"), 8}, // 2 * 4 bytes
+			{"IPv6Range", mustFromString("::1-::ff"), 32},        // 2 * 16 bytes
 		}
-	}
 
-	// ###
-	// only unmarshal into zero Range
-	r := mustFromString("10.0.0.0/24")
-	if err := r.UnmarshalBinary([]byte{1, 2, 3, 0, 1, 2, 3, 255}); err == nil {
-		t.Fatalf("%q decoded from byte slize into non zero range; want err, got %v", r, err)
-	}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				data, err := tt.input.MarshalBinary()
+				if err != nil {
+					t.Fatalf("MarshalBinary failed: %v", err)
+				}
+				if len(data) != tt.wantLength {
+					t.Errorf("incorrect byte length: got %d, want %d", len(data), tt.wantLength)
+				}
+			})
+		}
+	})
+
+	t.Run("UnmarshalErrors", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("NilReceiver", func(t *testing.T) {
+			t.Parallel()
+			var r *iprange.IPRange
+			if err := r.UnmarshalBinary([]byte{1, 2, 3, 4, 5, 6, 7, 8}); err == nil {
+				t.Error("expected error when UnmarshalBinary on nil receiver, got nil")
+			}
+		})
+
+		t.Run("NonZeroReceiver", func(t *testing.T) {
+			t.Parallel()
+			r := mustFromString("1.2.3.4")
+			if err := r.UnmarshalBinary([]byte{1, 2, 3, 4, 5, 6, 7, 8}); err == nil {
+				t.Error("expected error when UnmarshalBinary into non-zero receiver, got nil")
+			}
+		})
+
+		t.Run("EmptyAndNilBinary", func(t *testing.T) {
+			t.Parallel()
+			var r1 iprange.IPRange
+			if err := r1.UnmarshalBinary(nil); err != nil {
+				t.Errorf("unexpected error on UnmarshalBinary(nil): %v", err)
+			}
+			if r1 != (iprange.IPRange{}) {
+				t.Errorf("expected zero value after UnmarshalBinary(nil), got %v", r1)
+			}
+
+			var r2 iprange.IPRange
+			if err := r2.UnmarshalBinary([]byte{}); err != nil {
+				t.Errorf("unexpected error on UnmarshalBinary([]byte{}): %v", err)
+			}
+			if r2 != (iprange.IPRange{}) {
+				t.Errorf("expected zero value after UnmarshalBinary([]byte{}), got %v", r2)
+			}
+		})
+
+		t.Run("InvalidBufferLength", func(t *testing.T) {
+			t.Parallel()
+			var buf [100]byte
+			for length := 1; length <= len(buf); length++ {
+				if length == 8 || length == 32 {
+					continue // these are valid lengths
+				}
+				var r iprange.IPRange
+				if err := r.UnmarshalBinary(buf[:length]); err == nil {
+					t.Errorf("expected error for invalid buffer length %d, got nil", length)
+				}
+			}
+		})
+
+		t.Run("InvalidIPOrder", func(t *testing.T) {
+			t.Parallel()
+			badBinary := [][]byte{
+				{0, 0, 0, 1, 0, 0, 0, 0}, // IPv4: 0.0.0.1-0.0.0.0
+			}
+
+			badIPv6 := make([]byte, 32)
+			badIPv6[15] = 1 // first = ::1, last = ::
+			badBinary = append(badBinary, badIPv6)
+
+			for _, data := range badBinary {
+				var r iprange.IPRange
+				if err := r.UnmarshalBinary(data); err == nil {
+					t.Errorf("expected error when last address is less than first address, got nil (data: %v)", data)
+				}
+			}
+		})
+	})
 }
 
 func TestMarshalUnmarshalText(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		r          iprange.IPRange
-		wantString string
-	}{
-		{mustFromString("1.2.3.4"), "1.2.3.4/32"},
-		{mustFromString("1.2.3.4/24"), "1.2.3.0/24"},
-		{mustFromString("1.2.3.4-6.7.8.9"), "1.2.3.4-6.7.8.9"},
-		{mustFromString("::/0"), "::/0"},
-		{mustFromString("::"), "::/128"},
-		{mustFromString("fe80::ff05:834f:41ff:5de9/10"), "fe80::/10"},
-		{mustFromString("::-::ff"), "::/120"},
-		{mustFromString("::ffff:1.2.3.4/112"), "::ffff:1.2.0.0/112"},
-		{iprange.IPRange{}, ""},
-	}
 
-	for _, tt := range tests {
-		r := tt.r
-		b, err := r.MarshalText()
-		if err != nil {
-			t.Fatal(err)
+	t.Run("ValidRoundtrips", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name  string
+			input iprange.IPRange
+			want  string
+		}{
+			{"ZeroValue", iprange.IPRange{}, ""},
+			{"IPv4SingleIP", mustFromString("1.2.3.4"), "1.2.3.4/32"},
+			{"IPv4Prefix", mustFromString("1.2.3.0/24"), "1.2.3.0/24"},
+			{"IPv4Range", mustFromString("1.2.3.4-6.7.8.9"), "1.2.3.4-6.7.8.9"},
+			{"IPv6Zero", mustFromString("::/0"), "::/0"},
+			{"IPv6Local", mustFromString("::1"), "::1/128"},
+			{"IPv6Prefix", mustFromString("fe80::/10"), "fe80::/10"},
+			{"IPv6Range", mustFromString("::1-::ff"), "::1-::ff"},
+			{"IPv6PrefixRange", mustFromString("::-::ff"), "::/120"},
 		}
-		if string(b) != tt.wantString {
-			t.Fatalf("%q encoded to '%s'; want %s", tt.r, b, tt.wantString)
-		}
-		var r2 iprange.IPRange
-		if err := r2.UnmarshalText(b); err != nil {
-			t.Fatal(err)
-		}
-		if r != r2 {
-			t.Fatalf("got %v; want %v", r2, r)
-		}
-	}
 
-	// ###
-	// only unmarshal into zero Range
-	r := mustFromString("10.0.0.0/24")
-	if err := r.UnmarshalText([]byte{1, 2, 3, 0, 1, 2, 3, 255}); err == nil {
-		t.Fatalf("%q decoded from byte slize into non zero range; want err, got %v", r, err)
-	}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				data, err := tt.input.MarshalText()
+				if err != nil {
+					t.Fatalf("MarshalText failed: %v", err)
+				}
+
+				if string(data) != tt.want {
+					t.Errorf("MarshalText output mismatch: got %q, want %q", string(data), tt.want)
+				}
+
+				var decoded iprange.IPRange
+				if err := decoded.UnmarshalText(data); err != nil {
+					t.Fatalf("UnmarshalText failed: %v", err)
+				}
+
+				if decoded != tt.input {
+					t.Errorf("decoded range does not match: got %v, want %v", decoded, tt.input)
+				}
+			})
+		}
+	})
+
+	t.Run("UnmarshalErrors", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("NilReceiver", func(t *testing.T) {
+			t.Parallel()
+			var r *iprange.IPRange
+			if err := r.UnmarshalText([]byte("1.2.3.4")); err == nil {
+				t.Error("expected error when UnmarshalText on nil receiver, got nil")
+			}
+		})
+
+		t.Run("NonZeroReceiver", func(t *testing.T) {
+			t.Parallel()
+			r := mustFromString("1.2.3.4")
+			if err := r.UnmarshalText([]byte("1.2.3.4")); err == nil {
+				t.Error("expected error when UnmarshalText into non-zero receiver, got nil")
+			}
+		})
+
+		t.Run("EmptyAndNilText", func(t *testing.T) {
+			t.Parallel()
+			var r1 iprange.IPRange
+			if err := r1.UnmarshalText(nil); err != nil {
+				t.Errorf("unexpected error on UnmarshalText(nil): %v", err)
+			}
+			if r1 != (iprange.IPRange{}) {
+				t.Errorf("expected zero value after UnmarshalText(nil), got %v", r1)
+			}
+
+			var r2 iprange.IPRange
+			if err := r2.UnmarshalText([]byte("")); err != nil {
+				t.Errorf("unexpected error on UnmarshalText([]byte(\"\"\")): %v", err)
+			}
+			if r2 != (iprange.IPRange{}) {
+				t.Errorf("expected zero value after UnmarshalText([]byte(\"\")), got %v", r2)
+			}
+		})
+
+		t.Run("InvalidText", func(t *testing.T) {
+			t.Parallel()
+			invalidInputs := []string{
+				"invalid-ip-range",
+				"1.2.3.4-",
+				"1.2.3.4-5.6.7.8-9.10.11.12",
+				"1.2.3.4/999",
+				"1.2.3.4-5.6.7",
+				"1.2.3.4-::1",
+				"fe80::1%eth0-fe80::2",
+			}
+
+			for _, input := range invalidInputs {
+				t.Run(input, func(t *testing.T) {
+					t.Parallel()
+					var r iprange.IPRange
+					if err := r.UnmarshalText([]byte(input)); err == nil {
+						t.Errorf("expected error when UnmarshalText with input %q, got nil", input)
+					}
+				})
+			}
+		})
+	})
 }
 
 func TestCompare(t *testing.T) {
