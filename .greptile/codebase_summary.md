@@ -11,11 +11,11 @@ Unlike CIDR prefixes, `IPRange` supports arbitrary bounds (e.g., `10.0.0.3-10.0.
 ---
 
 ## 2. File Structure
-*   **[iprange.go](file:///home/gaissmai/project/iprange/iprange.go)**: The main source file containing the `IPRange` struct definition, initialization functions, comparison operations, formatting, marshaling logic, and main algorithms (`Merge`, `Remove`).
-*   **[iprange_test.go](file:///home/gaissmai/project/iprange/iprange_test.go)**: Test suite covering string parsing, marshaling, comparison, merging, removal, and edge cases.
-*   **[example_test.go](file:///home/gaissmai/project/iprange/example_test.go)**: Executable examples for Go doc/documentation, showing how to parse, merge, and remove ranges.
-*   **[go.mod](file:///home/gaissmai/project/iprange/go.mod)** / **[go.sum](file:///home/gaissmai/project/iprange/go.sum)**: Module definition. Includes a dependency on `github.com/gaissmai/extnetip` for helper utilities (e.g., iterator conversion, prefix extraction).
-*   **[.greptile/rules.md](file:///home/gaissmai/project/iprange/.greptile/rules.md)**: AI assistant guardrails (English communication, ASCII-only comments/variables).
+*   **[iprange.go](../iprange.go)**: The main source file containing the `IPRange` struct definition, initialization functions, comparison operations, formatting, marshaling logic, and main algorithms (`Merge`, `Remove`).
+*   **[iprange_test.go](../iprange_test.go)**: Test suite covering string parsing, marshaling, comparison, merging, removal, and edge cases.
+*   **[example_test.go](../example_test.go)**: Executable examples for Go doc/documentation, showing how to parse, merge, and remove ranges.
+*   **[go.mod](../go.mod)** / **[go.sum](../go.sum)**: Module definition. Includes a dependency on `github.com/gaissmai/extnetip` for helper utilities (e.g., iterator conversion, prefix extraction).
+*   **[rules.md](rules.md)**: AI assistant guardrails (English communication, ASCII-only comments/variables).
 
 ---
 

@@ -711,7 +711,7 @@ func TestMarshalUnmarshalText(t *testing.T) {
 
 			var r2 iprange.IPRange
 			if err := r2.UnmarshalText([]byte("")); err != nil {
-				t.Errorf("unexpected error on UnmarshalText([]byte(\"\"\")): %v", err)
+				t.Errorf("unexpected error on UnmarshalText([]byte(\"\")): %v", err)
 			}
 			if r2 != (iprange.IPRange{}) {
 				t.Errorf("expected zero value after UnmarshalText([]byte(\"\")), got %v", r2)
